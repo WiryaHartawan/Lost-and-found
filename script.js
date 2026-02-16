@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBw9bZb08ux2Ft2ywM4Kygo3-FYEfWD-6I",
@@ -13,128 +14,99 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const dbRef = ref(db, 'laporan_v2');
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 
-// --- FUNGSI KOMPRESI & BASE64 ---
-const processImage = (file) => {
+// Status Login
+let userData = null;
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        userData = user;
+        document.getElementById('auth-section').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        document.getElementById('display-name').innerText = user.displayName || user.email.split('@')[0];
+    } else {
+        document.getElementById('auth-section').classList.remove('hidden');
+        document.getElementById('main-app').classList.add('hidden');
+    }
+});
+
+// Fungsi Login
+document.getElementById('btn-google-login').onclick = () => signInWithPopup(auth, provider);
+document.getElementById('btn-email-auth').onclick = async () => {
+    const e = document.getElementById('email-input').value;
+    const p = document.getElementById('pass-input').value;
+    try {
+        await signInWithEmailAndPassword(auth, e, p);
+    } catch {
+        await createUserWithEmailAndPassword(auth, e, p).catch(err => alert(err.message));
+    }
+};
+document.getElementById('btn-logout').onclick = () => signOut(auth);
+
+// Fungsi Kompres Gambar (Max 5MB)
+const compressImg = (file) => {
     return new Promise((resolve) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = (event) => {
+        reader.onload = (e) => {
             const img = new Image();
-            img.src = event.target.result;
+            img.src = e.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-
-                // Perkecil dimensi jika terlalu besar (max 1200px)
-                const max_size = 1200;
-                if (width > height) {
-                    if (width > max_size) {
-                        height *= max_size / width;
-                        width = max_size;
-                    }
-                } else {
-                    if (height > max_size) {
-                        width *= max_size / height;
-                        height = max_size;
-                    }
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-
-                // Kualitas 0.7 (70%) agar ukuran file teks Base64 ramping
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                resolve(dataUrl);
+                const scale = 800 / img.width;
+                canvas.width = 800;
+                canvas.height = img.height * scale;
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.7));
             };
         };
     });
 };
 
-// --- LOGIKA UI ---
-const toggleUI = () => {
-    document.getElementById('view-list').classList.toggle('hidden');
-    document.getElementById('view-form').classList.toggle('hidden');
-};
-
-const kirimLaporan = async () => {
-    const nama = document.getElementById('nama-barang').value;
-    const lokasi = document.getElementById('lokasi-barang').value;
-    const fileInput = document.getElementById('foto-barang');
-    const file = fileInput.files[0];
+// Posting Data
+document.getElementById('btn-posting').onclick = async () => {
+    const n = document.getElementById('barang').value;
+    const l = document.getElementById('lokasi').value;
+    const f = document.getElementById('foto').files[0];
     const btn = document.getElementById('btn-posting');
 
-    if (!nama || !lokasi) return alert("Nama dan Lokasi wajib diisi!");
+    if (!n || !l) return alert("Lengkapi data!");
+    btn.disabled = true; btn.innerText = "Sabar ya...";
 
-    // --- CEK LIMIT 5MB ---
-    if (file) {
-        const limitMB = 5;
-        if (file.size > limitMB * 1024 * 1024) {
-            alert(`File terlalu besar! Maksimal ${limitMB}MB.`);
-            return;
-        }
-    }
+    let imgBase64 = f ? await compressImg(f) : "";
 
-    btn.disabled = true;
-    btn.innerText = "Sedang Memposting...";
+    await push(ref(db, 'laporan_v2'), {
+        nama: n, lokasi: l, gambar: imgBase64,
+        pelapor: userData.displayName || userData.email.split('@')[0],
+        waktu: new Date().toLocaleString('id-ID')
+    });
 
-    try {
-        let base64String = "";
-        if (file) {
-            base64String = await processImage(file);
-        }
-
-        await push(dbRef, {
-            nama: nama,
-            lokasi: lokasi,
-            gambar: base64String,
-            waktu: new Date().toLocaleString('id-ID')
-        });
-
-        alert("Berhasil Terposting!");
-        document.getElementById('nama-barang').value = "";
-        document.getElementById('lokasi-barang').value = "";
-        fileInput.value = "";
-        toggleUI();
-    } catch (error) {
-        console.error(error);
-        alert("Gagal memposting. Cek koneksi internet.");
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Posting Sekarang";
-    }
+    alert("Berhasil!");
+    location.reload();
 };
 
-// --- EVENT LISTENERS ---
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('btn-buka-form').onclick = toggleUI;
-    document.getElementById('btn-batal').onclick = toggleUI;
-    document.getElementById('btn-posting').onclick = kirimLaporan;
+// Navigasi & Tampil Data
+document.getElementById('btn-tambah').onclick = () => {
+    document.getElementById('view-list').classList.add('hidden');
+    document.getElementById('view-form').classList.remove('hidden');
+};
+document.getElementById('btn-batal').onclick = () => location.reload();
 
-    onValue(dbRef, (snapshot) => {
-        const listContainer = document.getElementById('item-list');
-        listContainer.innerHTML = "";
-        const data = snapshot.val();
-
-        if (data) {
-            Object.keys(data).reverse().forEach(key => {
-                const item = data[key];
-                listContainer.innerHTML += `
-                    <div class="card">
-                        ${item.gambar ? `<img src="${item.gambar}" loading="lazy">` : ""}
-                        <div style="padding: 10px;">
-                            <strong>📦 ${item.nama}</strong><br>
-                            <small>📍 ${item.lokasi}</small><br>
-                            <i style="font-size: 11px; color: gray;">${item.waktu}</i>
-                        </div>
-                    </div>`;
-            });
-        } else {
-            listContainer.innerHTML = "<p style='text-align:center;'>Belum ada laporan barang.</p>";
-        }
-    });
+onValue(ref(db, 'laporan_v2'), (s) => {
+    const container = document.getElementById('item-list');
+    container.innerHTML = "";
+    const data = s.val();
+    if (data) {
+        Object.keys(data).reverse().forEach(k => {
+            const v = data[k];
+            container.innerHTML += `
+                <div class="card">
+                    ${v.gambar ? `<img src="${v.gambar}">` : ""}
+                    <strong>📦 ${v.nama}</strong><br>
+                    <small>📍 ${v.lokasi}</small><br>
+                    <small style="color: blue;">👤 Oleh: ${v.pelapor}</small>
+                </div>`;
+        });
+    }
 });
