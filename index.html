@@ -3,42 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lost & Found Sekolah</title>
+    <title>Lost & Found - Login</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 450px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
-        .btn-add { background: #1877f2; color: white; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; transition: 0.3s; }
+        button:hover { opacity: 0.8; }
+        .btn-google { background: #db4437; color: white; }
+        .btn-main { background: #1877f2; color: white; }
         .btn-save { background: #42b72a; color: white; }
         .btn-cancel { background: #f02849; color: white; }
         .card { background: white; border: 1px solid #ddd; padding: 15px; margin-top: 15px; border-radius: 10px; }
-        .card img { width: 100%; border-radius: 8px; margin-bottom: 10px; display: block; }
-        .loading { text-align: center; color: gray; }
+        .card img { width: 100%; border-radius: 8px; margin-bottom: 10px; }
+        .user-bar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #eee; margin-bottom: 20px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>🔍 Lost & Found</h2>
-        
-        <div id="view-list">
-            <button id="btn-buka-form" class="btn-add">+ Lapor Barang Ditemukan</button>
-            <div id="item-list"><p class="loading">Memuat data...</p></div>
+        <div id="auth-section">
+            <h2 style="text-align: center;">🔍 Masuk LostFound</h2>
+            <button id="btn-google-login" class="btn-google">Masuk dengan Google</button>
+            <div style="text-align: center; margin: 10px; color: gray;">atau pakai Email</div>
+            <input type="email" id="email-input" placeholder="Email">
+            <input type="password" id="pass-input" placeholder="Password">
+            <button id="btn-email-auth" class="btn-main">Login / Register</button>
         </div>
 
-        <div id="view-form" class="hidden">
-            <h3>Detail Laporan</h3>
-            <input type="text" id="nama-barang" placeholder="Nama Barang">
-            <input type="text" id="lokasi-barang" placeholder="Lokasi Ditemukan">
-            <label style="font-size: 12px; color: gray;">Pilih Foto (Maksimal 5MB):</label>
-            <input type="file" id="foto-barang" accept="image/*">
-            <button id="btn-posting" class="btn-save">Posting Sekarang</button>
-            <button id="btn-batal" class="btn-cancel">Batal</button>
+        <div id="main-app" class="hidden">
+            <div class="user-bar">
+                <div>Halo, <b id="display-name">User</b></div>
+                <button id="btn-logout" style="width: auto; padding: 5px 10px; margin: 0; font-size: 12px;">Keluar</button>
+            </div>
+
+            <div id="view-list">
+                <button id="btn-tambah" class="btn-main" style="width: 100%;">+ Lapor Barang Ditemukan</button>
+                <div id="item-list">Memuat laporan...</div>
+            </div>
+
+            <div id="view-form" class="hidden">
+                <h3>Laporan Baru</h3>
+                <input type="text" id="barang" placeholder="Nama Barang">
+                <input type="text" id="lokasi" placeholder="Lokasi Ketemu">
+                <label style="font-size: 11px; color: gray;">Foto Barang (Max 5MB):</label>
+                <input type="file" id="foto" accept="image/*">
+                <button id="btn-posting" class="btn-save">Posting Sekarang</button>
+                <button id="btn-batal" class="btn-cancel">Batal</button>
+            </div>
         </div>
     </div>
     <script type="module" src="script.js"></script>
 </body>
 </html>
-
-
