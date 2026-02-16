@@ -23,20 +23,28 @@ window.tampilPesan = (msg, isConfirm = false, onConfirm = null) => {
     document.getElementById('modal-msg').innerText = msg;
     modal.classList.remove('hidden');
     actions.innerHTML = '';
+
     if (isConfirm) {
-        const bY = document.createElement('button'); bY.className="btn-main"; bY.innerText="Ya, Hapus";
-        bY.onclick = () => { onConfirm(); modal.classList.add('hidden'); };
-        const bB = document.createElement('button'); bB.className="btn-cancel"; bB.innerText="Batal";
-        bB.style.margin="0"; bB.onclick = () => modal.classList.add('hidden');
-        actions.appendChild(bB); actions.appendChild(bY);
+        const btnBatal = document.createElement('button');
+        btnBatal.className = "btn-cancel"; btnBatal.innerText = "Batal";
+        btnBatal.onclick = () => modal.classList.add('hidden');
+
+        const btnYa = document.createElement('button');
+        btnYa.className = "btn-main"; btnYa.innerText = "Ya, Hapus";
+        btnYa.style.background = "#ff4d4d";
+        btnYa.onclick = () => { onConfirm(); modal.classList.add('hidden'); };
+
+        actions.appendChild(btnBatal);
+        actions.appendChild(btnYa);
     } else {
-        const bO = document.createElement('button'); bO.className="btn-main"; bO.innerText="OK";
-        bO.style.width="100%"; bO.onclick = () => modal.classList.add('hidden');
-        actions.appendChild(bO);
+        const btnOk = document.createElement('button');
+        btnOk.className = "btn-main"; btnOk.innerText = "OK";
+        btnOk.onclick = () => modal.classList.add('hidden');
+        actions.appendChild(btnOk);
     }
 };
 
-// --- LOGIN LOGIC (AUTO-SAVE) ---
+// --- LOGIN LOGIC ---
 async function loginLogic(nick, pass, isAuto = false) {
     if (!nick || !pass) return;
     const userRef = ref(db, 'users/' + nick.toLowerCase());
@@ -48,21 +56,18 @@ async function loginLogic(nick, pass, isAuto = false) {
         document.getElementById('main-app').classList.remove('hidden');
         document.getElementById('display-nick').innerText = nick;
         
-        // SELALU SIMPAN KE LOCALSTORAGE
         localStorage.setItem('savedNick', nick);
         localStorage.setItem('savedPass', pass);
-        
         loadData();
     } else if (!isAuto) tampilPesan("Nickname atau Password salah!");
 }
 
-// Cek sesi saat web dibuka
 window.addEventListener('load', () => {
     const sn = localStorage.getItem('savedNick'), sp = localStorage.getItem('savedPass');
     if (sn && sp) loginLogic(sn, sp, true);
 });
 
-// --- FILTER & DATA ---
+// --- FILTER TAB ---
 document.getElementById('tab-all').onclick = () => {
     currentFilter = "all";
     document.getElementById('tab-bg').classList.remove('slide-right');
@@ -102,9 +107,9 @@ function loadData() {
 }
 
 window.hapusPostingan = (id) => {
-    tampilPesan("Hapus laporan ini?", true, async () => {
+    tampilPesan("Apakah Anda yakin ingin menghapus laporan ini?", true, async () => {
         await remove(ref(db, 'laporan_v2/' + id));
-        tampilPesan("Berhasil dihapus.");
+        tampilPesan("Laporan berhasil dihapus.");
     });
 };
 
@@ -144,9 +149,17 @@ document.getElementById('go-to-reg').onclick = () => { document.getElementById('
 document.getElementById('go-to-login').onclick = () => { document.getElementById('register-section').classList.add('hidden'); document.getElementById('login-section').classList.remove('hidden'); };
 document.getElementById('btn-buka-form').onclick = () => { document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-form').classList.remove('hidden'); };
 document.getElementById('btn-batal').onclick = () => { document.getElementById('view-form').classList.add('hidden'); document.getElementById('view-list').classList.remove('hidden'); };
-document.getElementById('toggle-l').onclick = () => { const p = document.getElementById('login-pass'); p.type = p.type === "password" ? "text" : "password"; };
-document.getElementById('toggle-r1').onclick = () => { const p = document.getElementById('reg-pass'); p.type = p.type === "password" ? "text" : "password"; };
-document.getElementById('toggle-r2').onclick = () => { const p = document.getElementById('reg-confirm'); p.type = p.type === "password" ? "text" : "password"; };
+
+// TOGGLE PASS
+const regToggles = ['toggle-l', 'toggle-r1', 'toggle-r2'];
+const regInputs = ['login-pass', 'reg-pass', 'reg-confirm'];
+regToggles.forEach((id, i) => {
+    document.getElementById(id).onclick = () => {
+        const p = document.getElementById(regInputs[i]);
+        p.type = p.type === "password" ? "text" : "password";
+    };
+});
+
 document.getElementById('btn-register-action').onclick = async () => {
     const nick = document.getElementById('reg-nick').value.trim(), pass = document.getElementById('reg-pass').value, conf = document.getElementById('reg-confirm').value;
     if (!nick || !pass || pass !== conf) return tampilPesan("Data tidak valid!");
