@@ -3,40 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Penemu - Internal Chat</title>
+    <title>Penemu - App</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 450px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; min-height: 80vh; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; margin: 0; padding: 10px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 450px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; min-height: 90vh; display: flex; flex-direction: column; padding-bottom: 80px; }
         .hidden { display: none !important; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; transition: 0.3s; }
-        .btn-main { background: #1877f2; color: white; width: 100%; }
-        .btn-cancel { background: #f02849; color: white; width: 100%; }
-        .btn-delete { background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; float: right; }
         
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-main { background: #1877f2; color: white; }
+        .btn-cancel { background: #f02849; color: white; }
+        
+        /* BOTTOM NAVBAR */
+        .bottom-nav { position: absolute; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; padding: 10px 0; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
+        .nav-item { text-align: center; color: #555; cursor: pointer; font-size: 12px; flex: 1; }
+        .nav-item.active { color: #1877f2; }
+        .nav-icon { font-size: 20px; display: block; margin-bottom: 2px; }
+
         /* CHAT UI */
         #chat-section { display: flex; flex-direction: column; height: 80vh; }
-        #chat-messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: #f9f9f9; border-radius: 8px; }
-        .msg { max-width: 80%; padding: 8px 12px; border-radius: 15px; font-size: 14px; line-height: 1.4; position: relative; }
-        .msg-me { align-self: flex-end; background: #1877f2; color: white; border-bottom-right-radius: 2px; }
-        .msg-them { align-self: flex-start; background: #e4e6eb; color: black; border-bottom-left-radius: 2px; }
-        .msg-time { font-size: 9px; opacity: 0.7; display: block; text-align: right; margin-top: 4px; }
-        .chat-header { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        #chat-messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: #f9f9f9; border-radius: 10px; }
+        .msg { max-width: 80%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4; }
+        .msg-me { align-self: flex-end; background: #1877f2; color: white; border-bottom-right-radius: 4px; }
+        .msg-them { align-self: flex-start; background: #e4e6eb; color: black; border-bottom-left-radius: 4px; }
         
-        .filter-tab { display: flex; background: #eee; border-radius: 10px; margin-bottom: 15px; padding: 5px; position: relative; }
-        .tab-item { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; z-index: 2; transition: 0.3s; color: #555; }
+        /* INBOX LIST */
+        .inbox-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .inbox-item:active { background: #f0f2f5; }
+
+        .filter-tab { display: flex; background: #eee; border-radius: 10px; margin: 10px 0; padding: 5px; position: relative; }
+        .tab-item { flex: 1; text-align: center; padding: 8px; font-size: 13px; font-weight: bold; cursor: pointer; z-index: 2; transition: 0.3s; color: #555; }
         .tab-item.active { color: #1877f2; }
         .tab-bg { position: absolute; width: 50%; height: calc(100% - 10px); background: white; border-radius: 8px; transition: 0.3s ease-in-out; z-index: 1; }
         .slide-right { transform: translateX(100%); }
 
-        .card { background: white; border: 1px solid #ddd; padding: 15px; margin-top: 15px; border-radius: 10px; }
-        .card img { width: 100%; border-radius: 8px; margin-bottom: 10px; }
+        .card { background: white; border: 1px solid #ddd; padding: 15px; margin-top: 15px; border-radius: 12px; }
+        .card img { width: 100%; border-radius: 10px; margin-bottom: 10px; }
         .chat-link { color: #1877f2; text-decoration: underline; font-weight: bold; cursor: pointer; }
-        
-        /* MODAL */
+
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .modal-box { background: white; padding: 20px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; }
         .btn-modal-flex { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-modal-flex button { flex: 1; }
     </style>
 </head>
 <body>
@@ -46,25 +54,24 @@
             <input type="text" id="login-nick" placeholder="Nickname">
             <input type="password" id="login-pass" placeholder="Password">
             <button id="btn-login-action" class="btn-main">Login</button>
-            <p style="text-align:center; font-size:14px; color:#1877f2; cursor:pointer; text-decoration:underline;" id="go-to-reg">Daftar Akun Baru</p>
+            <p style="text-align:center; font-size:14px; color:#1877f2; cursor:pointer;" id="go-to-reg"><u>Buat Akun Baru</u></p>
         </div>
 
         <div id="register-section" class="hidden">
-            <h2 style="text-align: center;">Daftar Akun</h2>
+            <h2 style="text-align: center;">Daftar</h2>
             <input type="text" id="reg-nick" placeholder="Nickname">
             <input type="password" id="reg-pass" placeholder="Password">
-            <input type="password" id="reg-confirm" placeholder="Konfirmasi Password">
+            <input type="password" id="reg-confirm" placeholder="Ulangi Password">
             <button id="btn-register-action" class="btn-main" style="background: #42b72a;">Daftar</button>
-            <p style="text-align:center; font-size:14px; color:#1877f2; cursor:pointer; text-decoration:underline;" id="go-to-login">Sudah punya akun? Login</p>
+            <p style="text-align:center; font-size:14px; color:#1877f2; cursor:pointer;" id="go-to-login"><u>Sudah punya akun? Login</u></p>
         </div>
 
-        <div id="main-app" class="hidden">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <span>Halo, <b id="display-nick"></b></span>
-                <button id="btn-logout" style="width:auto; padding:5px 10px; margin:0;">Logout</button>
-            </div>
-
-            <div id="view-list">
+        <div id="app-content" class="hidden">
+            <div id="view-home">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <b style="font-size: 18px;">Barang Temuan</b>
+                    <span id="btn-logout" style="color:red; font-size:12px; cursor:pointer;">Logout</span>
+                </div>
                 <div class="filter-tab">
                     <div id="tab-all" class="tab-item active">Semua</div>
                     <div id="tab-mine" class="tab-item">Milik Saya</div>
@@ -74,25 +81,39 @@
                 <div id="item-list"></div>
             </div>
 
+            <div id="view-inbox" class="hidden">
+                <b style="font-size: 18px;">Pesan Masuk</b>
+                <div id="inbox-list" style="margin-top:15px;"></div>
+            </div>
+
             <div id="view-form" class="hidden">
                 <h3>Lapor Barang</h3>
                 <input type="text" id="nama-barang" placeholder="Nama Barang">
                 <input type="text" id="lokasi-barang" placeholder="Lokasi">
-                <input type="file" id="foto-barang" accept="image/*">
-                <button id="btn-posting" class="btn-save">Posting</button>
-                <button id="btn-batal" class="btn-cancel">Batal</button>
+                <input type="file" id="foto-barang">
+                <button id="btn-posting" class="btn-main" style="background:#42b72a;">Posting</button>
+                <button id="btn-batal" class="btn-cancel" style="margin-top:10px;">Batal</button>
             </div>
         </div>
 
         <div id="chat-section" class="hidden">
-            <div class="chat-header">
-                <button id="btn-back-chat" style="width:auto; background:none; color:#1877f2; font-size:20px; padding:0; margin:0;">←</button>
-                <b id="chat-with-name">Nama Pelapor</b>
+            <div style="display:flex; align-items:center; gap:10px; padding-bottom:10px;">
+                <button id="btn-back-chat" style="width:auto; background:none; color:#1877f2; font-size:24px;">←</button>
+                <b id="chat-with-name">...</b>
             </div>
             <div id="chat-messages"></div>
             <div style="display:flex; gap:5px; padding-top:10px;">
                 <input type="text" id="chat-input" placeholder="Tulis pesan..." style="margin:0;">
                 <button id="btn-send-chat" style="width:auto; margin:0;" class="btn-main">Kirim</button>
+            </div>
+        </div>
+
+        <div id="navbar" class="bottom-nav hidden">
+            <div class="nav-item active" id="nav-home">
+                <span class="nav-icon">🏠</span>Beranda
+            </div>
+            <div class="nav-item" id="nav-inbox">
+                <span class="nav-icon">💬</span>Pesan
             </div>
         </div>
     </div>
