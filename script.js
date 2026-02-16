@@ -79,22 +79,25 @@ function loadData() {
                 const isMine = currentNick === v.user.toLowerCase();
                 if (currentFilter === "mine" && !isMine) return;
                 
-                // Menampilkan List dengan Label Nama Barang dan Lokasi
+                // Huruf pertama pelapor menjadi Kapital
+                const namaKapital = v.user.charAt(0).toUpperCase() + v.user.slice(1);
+
+                // Nama Barang dan Lokasi tidak menggunakan tebal (bold)
                 container.innerHTML += `
                     <div class="card">
                         ${isMine ? `<button class="btn-delete" onclick="hapusPostingan('${id}')">Hapus</button>` : ""}
                         ${v.img ? `<img src="${v.img}">` : ""}
-                        <strong>📦 Nama Barang: ${v.item}</strong><br>
+                        <span>📦 Nama Barang: ${v.item}</span><br>
                         <small>📍 Lokasi: ${v.loc}</small><br>
                         ${v.desc ? `<p style="font-size: 13px; color: #444; margin: 8px 0;">${v.desc}</p>` : ""}
-                        <small style="color:#1877f2;">👤 Pelapor: ${v.user}</small>
+                        <small style="color:#1877f2;">👤 Pelapor: ${namaKapital}</small>
                     </div>`;
             });
         } else { container.innerHTML = "<p style='text-align:center;color:gray;'>Belum ada laporan.</p>"; }
     });
 }
 
-// --- POSTING WITH DESCRIPTION ---
+// --- POSTING LOGIC ---
 const compress = (file) => {
     return new Promise((resolve) => {
         const reader = new FileReader(); reader.readAsDataURL(file);
@@ -136,14 +139,15 @@ document.getElementById('btn-posting').onclick = async () => {
     document.getElementById('btn-posting').disabled = false;
 };
 
-// --- OTHER APP LOGIC ---
+// --- DELETE LOGIC ---
 window.hapusPostingan = (id) => {
     tampilPesan("Apakah Anda yakin ingin menghapus laporan ini?", true, async () => {
         await remove(ref(db, 'laporan_v2/' + id));
-        tampilPesan("Laporan berhasil dihapus.");
+        tampilPesan("Berhasil dihapus.");
     });
 };
 
+// --- NAVIGATION & UI ---
 document.getElementById('tab-all').onclick = () => {
     currentFilter = "all";
     document.getElementById('tab-bg').classList.remove('slide-right');
