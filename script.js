@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, get, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+import { getDatabase, ref, push, onValue, get, set, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBw9bZb08ux2Ft2ywM4Kygo3-FYEfWD-6I",
@@ -30,14 +30,14 @@ setupToggle('toggle-l', 'login-pass');
 setupToggle('toggle-r1', 'reg-pass');
 setupToggle('toggle-r2', 'reg-confirm');
 
-// --- SISTEM LOGIN UTAMA ---
+// --- LOGIN LOGIC ---
 async function loginLogic(nick, pass, isAuto = false) {
     if (!nick || !pass) return;
     const userRef = ref(db, 'users/' + nick.toLowerCase());
     const snapshot = await get(userRef);
 
     if (snapshot.exists() && snapshot.val().password === pass) {
-        currentNick = nick;
+        currentNick = nick.toLowerCase();
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('register-section').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
@@ -47,56 +47,30 @@ async function loginLogic(nick, pass, isAuto = false) {
             localStorage.setItem('savedNick', nick);
             localStorage.setItem('savedPass', pass);
         }
-    } else {
-        if (!isAuto) alert("Nickname atau Password salah!");
+    } else if (!isAuto) {
+        alert("Nickname atau Password salah!");
     }
 }
 
-// Auto Login saat refresh
 window.addEventListener('load', () => {
     const sNick = localStorage.getItem('savedNick');
     const sPass = localStorage.getItem('savedPass');
     if (sNick && sPass) loginLogic(sNick, sPass, true);
 });
 
-// --- EVENT HANDLERS ---
-document.getElementById('btn-login-action').onclick = () => {
-    loginLogic(document.getElementById('login-nick').value.trim(), document.getElementById('login-pass').value);
+// --- FUNGSI HAPUS ---
+window.hapusPostingan = async (postId, ownerNick) => {
+    if (currentNick !== ownerNick.toLowerCase()) {
+        alert("Akses ditolak!");
+        return;
+    }
+    if (confirm("Hapus laporan ini?")) {
+        await remove(ref(db, 'laporan_v2/' + postId));
+        alert("Berhasil dihapus.");
+    }
 };
 
-document.getElementById('btn-logout').onclick = () => {
-    localStorage.clear();
-    location.reload();
-};
-
-document.getElementById('go-to-reg').onclick = () => {
-    document.getElementById('login-section').classList.add('hidden');
-    document.getElementById('register-section').classList.remove('hidden');
-};
-
-document.getElementById('go-to-login').onclick = () => {
-    document.getElementById('register-section').classList.add('hidden');
-    document.getElementById('login-section').classList.remove('hidden');
-};
-
-document.getElementById('btn-register-action').onclick = async () => {
-    const nick = document.getElementById('reg-nick').value.trim();
-    const pass = document.getElementById('reg-pass').value;
-    const conf = document.getElementById('reg-confirm').value;
-
-    if (!nick || !pass) return alert("Lengkapi data!");
-    if (pass !== conf) return alert("Konfirmasi password salah!");
-
-    const userRef = ref(db, 'users/' + nick.toLowerCase());
-    const check = await get(userRef);
-    if (check.exists()) return alert("Nickname sudah ada!");
-
-    await set(userRef, { password: pass });
-    alert("Berhasil Daftar! Silakan Login.");
-    location.reload();
-};
-
-// --- POSTING & GAMBAR ---
+// --- POSTING DATA ---
 const compress = (file) => {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -116,52 +90,28 @@ const compress = (file) => {
 };
 
 document.getElementById('btn-posting').onclick = async () => {
-    const inputNama = document.getElementById('nama-barang');
-    const inputLokasi = document.getElementById('lokasi-barang');
-    const inputFoto = document.getElementById('foto-barang');
+    const inNama = document.getElementById('nama-barang');
+    const inLokasi = document.getElementById('lokasi-barang');
+    const inFoto = document.getElementById('foto-barang');
     const btn = document.getElementById('btn-posting');
 
-    const n = inputNama.value.trim();
-    const l = inputLokasi.value.trim();
-    const f = inputFoto.files[0];
+    if (!inNama.value || !inLokasi.value) return alert("Isi data!");
+    btn.disabled = true; btn.innerText = "Memproses...";
 
-    if (!n || !l) return alert("Isi Nama & Lokasi!");
-    if (f && f.size > 5 * 1024 * 1024) return alert("Foto Max 5MB!");
+    let b64 = inFoto.files[0] ? await compress(inFoto.files[0]) : "";
 
-    btn.disabled = true; 
-    btn.innerText = "Memproses...";
-    
-    try {
-        let b64 = f ? await compress(f) : "";
+    await push(ref(db, 'laporan_v2'), {
+        item: inNama.value, loc: inLokasi.value, img: b64, user: currentNick, time: new Date().toLocaleString('id-ID')
+    });
 
-        await push(ref(db, 'laporan_v2'), {
-            item: n, 
-            loc: l, 
-            img: b64, 
-            user: currentNick, 
-            time: new Date().toLocaleString('id-ID')
-        });
-
-        alert("Berhasil Terposting!");
-
-        // PERBAIKAN BUG: Kosongkan Form setelah Berhasil
-        inputNama.value = "";
-        inputLokasi.value = "";
-        inputFoto.value = "";
-
-        // Kembali ke list
-        document.getElementById('view-form').classList.add('hidden');
-        document.getElementById('view-list').classList.remove('hidden');
-
-    } catch (err) {
-        alert("Gagal posting: " + err.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Posting Sekarang";
-    }
+    alert("Berhasil!");
+    inNama.value = ""; inLokasi.value = ""; inFoto.value = ""; // RESET FORM
+    document.getElementById('view-form').classList.add('hidden');
+    document.getElementById('view-list').classList.remove('hidden');
+    btn.disabled = false; btn.innerText = "Posting Sekarang";
 };
 
-// --- DATA DISPLAY ---
+// --- TAMPIL DATA ---
 onValue(ref(db, 'laporan_v2'), (s) => {
     const container = document.getElementById('item-list');
     container.innerHTML = "";
@@ -169,34 +119,39 @@ onValue(ref(db, 'laporan_v2'), (s) => {
     if (data) {
         Object.keys(data).reverse().forEach(id => {
             const v = data[id];
+            const isOwner = currentNick === v.user.toLowerCase();
             container.innerHTML += `
                 <div class="card">
-                    ${v.img ? `<img src="${v.img}" alt="Barang">` : ""}
+                    ${isOwner ? `<button class="btn-delete" onclick="hapusPostingan('${id}', '${v.user}')">Hapus</button>` : ""}
+                    ${v.img ? `<img src="${v.img}">` : ""}
                     <div style="padding: 5px;">
                         <strong>📦 ${v.item}</strong><br>
                         <small>📍 ${v.loc}</small><br>
-                        <small style="color:#1877f2;">👤 Pelapor: ${v.user}</small><br>
-                        <i style="font-size: 10px; color: gray;">${v.time}</i>
+                        <small style="color:#1877f2;">👤 Pelapor: ${v.user}</small>
                     </div>
                 </div>`;
         });
-    } else { 
-        container.innerHTML = "<p style='text-align: center; color: gray;'>Belum ada laporan.</p>"; 
+    } else {
+        container.innerHTML = "<p style='text-align:center;color:gray;'>Belum ada laporan.</p>";
     }
 });
 
-// Navigasi Form
-document.getElementById('btn-buka-form').onclick = () => {
-    document.getElementById('view-list').classList.add('hidden');
-    document.getElementById('view-form').classList.remove('hidden');
-};
-
-document.getElementById('btn-batal').onclick = () => {
-    // Kosongkan form saat batal agar tidak terbawa ke pembukaan berikutnya
-    document.getElementById('nama-barang').value = "";
-    document.getElementById('lokasi-barang').value = "";
-    document.getElementById('foto-barang').value = "";
-    
-    document.getElementById('view-form').classList.add('hidden');
-    document.getElementById('view-list').classList.remove('hidden');
+// NAVIGASI & AUTH
+document.getElementById('btn-login-action').onclick = () => loginLogic(document.getElementById('login-nick').value.trim(), document.getElementById('login-pass').value);
+document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
+document.getElementById('go-to-reg').onclick = () => { document.getElementById('login-section').classList.add('hidden'); document.getElementById('register-section').classList.remove('hidden'); };
+document.getElementById('go-to-login').onclick = () => { document.getElementById('register-section').classList.add('hidden'); document.getElementById('login-section').classList.remove('hidden'); };
+document.getElementById('btn-buka-form').onclick = () => { document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-form').classList.remove('hidden'); };
+document.getElementById('btn-batal').onclick = () => { document.getElementById('view-form').classList.add('hidden'); document.getElementById('view-list').classList.remove('hidden'); };
+document.getElementById('btn-register-action').onclick = async () => {
+    const nick = document.getElementById('reg-nick').value.trim();
+    const pass = document.getElementById('reg-pass').value;
+    const conf = document.getElementById('reg-confirm').value;
+    if (!nick || !pass || pass !== conf) return alert("Data tidak valid!");
+    const userRef = ref(db, 'users/' + nick.toLowerCase());
+    const snap = await get(userRef);
+    if (snap.exists()) return alert("Nickname sudah ada!");
+    await set(userRef, { password: pass });
+    alert("Berhasil! Silakan Login.");
+    location.reload();
 };
