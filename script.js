@@ -17,11 +17,14 @@ let currentNick = "";
 
 // --- SISTEM SHOW/HIDE PASSWORD ---
 const setupToggle = (btnId, inputId) => {
-    document.getElementById(btnId).onclick = function() {
-        const x = document.getElementById(inputId);
-        if (x.type === "password") { x.type = "text"; this.innerText = "TUTUP"; }
-        else { x.type = "password"; this.innerText = "LIHAT"; }
-    };
+    const btn = document.getElementById(btnId);
+    if(btn) {
+        btn.onclick = function() {
+            const x = document.getElementById(inputId);
+            if (x.type === "password") { x.type = "text"; this.innerText = "TUTUP"; }
+            else { x.type = "password"; this.innerText = "LIHAT"; }
+        };
+    }
 };
 setupToggle('toggle-l', 'login-pass');
 setupToggle('toggle-r1', 'reg-pass');
@@ -49,12 +52,12 @@ async function loginLogic(nick, pass, isAuto = false) {
     }
 }
 
-// Auto Login
-window.onload = () => {
+// Auto Login saat refresh
+window.addEventListener('load', () => {
     const sNick = localStorage.getItem('savedNick');
     const sPass = localStorage.getItem('savedPass');
     if (sNick && sPass) loginLogic(sNick, sPass, true);
-};
+});
 
 // --- EVENT HANDLERS ---
 document.getElementById('btn-login-action').onclick = () => {
@@ -113,23 +116,49 @@ const compress = (file) => {
 };
 
 document.getElementById('btn-posting').onclick = async () => {
-    const n = document.getElementById('nama-barang').value;
-    const l = document.getElementById('lokasi-barang').value;
-    const f = document.getElementById('foto-barang').files[0];
+    const inputNama = document.getElementById('nama-barang');
+    const inputLokasi = document.getElementById('lokasi-barang');
+    const inputFoto = document.getElementById('foto-barang');
     const btn = document.getElementById('btn-posting');
+
+    const n = inputNama.value.trim();
+    const l = inputLokasi.value.trim();
+    const f = inputFoto.files[0];
 
     if (!n || !l) return alert("Isi Nama & Lokasi!");
     if (f && f.size > 5 * 1024 * 1024) return alert("Foto Max 5MB!");
 
-    btn.disabled = true; btn.innerText = "Memproses...";
-    let b64 = f ? await compress(f) : "";
+    btn.disabled = true; 
+    btn.innerText = "Memproses...";
+    
+    try {
+        let b64 = f ? await compress(f) : "";
 
-    await push(ref(db, 'laporan_v2'), {
-        item: n, loc: l, img: b64, user: currentNick, time: new Date().toLocaleString('id-ID')
-    });
+        await push(ref(db, 'laporan_v2'), {
+            item: n, 
+            loc: l, 
+            img: b64, 
+            user: currentNick, 
+            time: new Date().toLocaleString('id-ID')
+        });
 
-    alert("Berhasil!");
-    location.reload();
+        alert("Berhasil Terposting!");
+
+        // PERBAIKAN BUG: Kosongkan Form setelah Berhasil
+        inputNama.value = "";
+        inputLokasi.value = "";
+        inputFoto.value = "";
+
+        // Kembali ke list
+        document.getElementById('view-form').classList.add('hidden');
+        document.getElementById('view-list').classList.remove('hidden');
+
+    } catch (err) {
+        alert("Gagal posting: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Posting Sekarang";
+    }
 };
 
 // --- DATA DISPLAY ---
@@ -142,13 +171,18 @@ onValue(ref(db, 'laporan_v2'), (s) => {
             const v = data[id];
             container.innerHTML += `
                 <div class="card">
-                    ${v.img ? `<img src="${v.img}">` : ""}
-                    <strong>📦 ${v.item}</strong><br>
-                    <small>📍 ${v.loc}</small><br>
-                    <small style="color:#1877f2;">👤 Pelapor: ${v.user}</small>
+                    ${v.img ? `<img src="${v.img}" alt="Barang">` : ""}
+                    <div style="padding: 5px;">
+                        <strong>📦 ${v.item}</strong><br>
+                        <small>📍 ${v.loc}</small><br>
+                        <small style="color:#1877f2;">👤 Pelapor: ${v.user}</small><br>
+                        <i style="font-size: 10px; color: gray;">${v.time}</i>
+                    </div>
                 </div>`;
         });
-    } else { container.innerHTML = "<p>Belum ada laporan.</p>"; }
+    } else { 
+        container.innerHTML = "<p style='text-align: center; color: gray;'>Belum ada laporan.</p>"; 
+    }
 });
 
 // Navigasi Form
@@ -156,7 +190,13 @@ document.getElementById('btn-buka-form').onclick = () => {
     document.getElementById('view-list').classList.add('hidden');
     document.getElementById('view-form').classList.remove('hidden');
 };
+
 document.getElementById('btn-batal').onclick = () => {
+    // Kosongkan form saat batal agar tidak terbawa ke pembukaan berikutnya
+    document.getElementById('nama-barang').value = "";
+    document.getElementById('lokasi-barang').value = "";
+    document.getElementById('foto-barang').value = "";
+    
     document.getElementById('view-form').classList.add('hidden');
     document.getElementById('view-list').classList.remove('hidden');
 };
