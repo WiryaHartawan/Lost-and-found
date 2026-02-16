@@ -1,77 +1,64 @@
-// Fungsi memunculkan/menutup form
-function toggleForm() {
-    const form = document.getElementById('form-section');
-    const list = document.getElementById('list-section');
-    form.classList.toggle('hidden');
-    list.classList.toggle('hidden');
-}
+// Import fungsi yang dibutuhkan dari Firebase SDK terbaru
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// Fungsi menyimpan data
-function saveItem() {
+// Konfigurasi milikmu
+const firebaseConfig = {
+    apiKey: "AIzaSyBw9bZb08ux2Ft2ywM4Kygo3-FYEfWD-6I",
+    authDomain: "lostfound-927df.firebaseapp.com",
+    projectId: "lostfound-927df",
+    // TAMBAHKAN baris databaseURL di bawah ini (cek di console Firebase bagian Realtime Database)
+    databaseURL: "https://lostfound-927df-default-rtdb.asia-southeast1.firebasedatabase.app", 
+    storageBucket: "lostfound-927df.firebasestorage.app",
+    messagingSenderId: "659071189789",
+    appId: "1:659071189789:web:f83742d4fb804b175a57f4"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Fungsi Simpan Data (Panggil dari tombol posting kamu)
+window.saveItem = function() {
     const nama = document.getElementById('input-nama').value;
     const lokasi = document.getElementById('input-lokasi').value;
-    const fotoInput = document.getElementById('input-foto');
 
-    if (nama === "" || lokasi === "") {
-        alert("Mohon isi semua data!");
-        return;
-    }
-
-    // Mengambil file gambar
-    const file = fotoInput.files[0];
-    const reader = new FileReader();
-
-    reader.onloadend = function() {
-        const item = {
-            id: Date.now(),
+    if(nama && lokasi) {
+        push(ref(db, 'barang'), {
             nama: nama,
             lokasi: lokasi,
-            foto: reader.result || 'https://via.placeholder.com/60'
-        };
-
-        // Simpan ke LocalStorage (Database sementara di Browser)
-        let items = JSON.parse(localStorage.getItem('lostFoundItems')) || [];
-        items.push(item);
-        localStorage.setItem('lostFoundItems', JSON.stringify(items));
-
-        renderItems();
-        toggleForm();
-        clearInput();
-    }
-
-    if (file) {
-        reader.readAsDataURL(file);
+            waktu: Date.now()
+        });
+        
+        alert("Berhasil diposting!");
+        // Tambahkan fungsi untuk menutup form kamu di sini
+        document.getElementById('input-nama').value = "";
+        document.getElementById('input-lokasi').value = "";
     } else {
-        reader.onloadend(); // Jika tidak ada foto
+        alert("Isi semua data dulu ya!");
     }
 }
 
-// Fungsi menampilkan daftar barang
-function renderItems() {
+// Menampilkan Data secara Real-Time (Otomatis update saat ada data baru)
+onValue(ref(db, 'barang'), (snapshot) => {
+    const data = snapshot.val();
     const listContainer = document.getElementById('item-list');
-    const items = JSON.parse(localStorage.getItem('lostFoundItems')) || [];
+    listContainer.innerHTML = ""; // Bersihkan tampilan lama
 
-    if (items.length === 0) {
-        listContainer.innerHTML = '<p class="empty-msg">Belum ada barang yang dilaporkan.</p>';
-        return;
+    if (data) {
+        // Balik urutan agar yang terbaru di atas
+        Object.keys(data).reverse().forEach(id => {
+            const item = data[id];
+            listContainer.innerHTML += `
+                <div class="card">
+                    <div class="info">
+                        <strong>📦 ${item.nama}</strong><br>
+                        <small>📍 Lokasi: ${item.lokasi}</small>
+                    </div>
+                </div>
+            `;
+        });
+    } else {
+        listContainer.innerHTML = "<p>Belum ada barang ditemukan.</p>";
     }
-
-    listContainer.innerHTML = items.map(item => `
-        <div class="card">
-            <img src="${item.foto}" alt="foto">
-            <div>
-                <strong>${item.nama}</strong><br>
-                <small>📍 ${item.lokasi}</small>
-            </div>
-        </div>
-    `).reverse().join('');
-}
-
-function clearInput() {
-    document.getElementById('input-nama').value = "";
-    document.getElementById('input-lokasi').value = "";
-    document.getElementById('input-foto').value = "";
-}
-
-// Jalankan saat pertama kali buka
-renderItems();
+});
