@@ -31,7 +31,7 @@ window.tampilPesan = (msg, isConfirm = false, onConfirm = null) => {
 
         const btnYa = document.createElement('button');
         btnYa.className = "btn-main"; btnYa.innerText = "Ya, Hapus";
-        btnYa.style.background = "#ff4d4d";
+        btnYa.style.background = "1ae8ff";
         btnYa.onclick = () => { onConfirm(); modal.classList.add('hidden'); };
 
         actions.appendChild(btnBatal);
@@ -170,3 +170,4 @@ document.getElementById('btn-register-action').onclick = async () => {
     tampilPesan("Berhasil Daftar! Silakan Login.");
     location.reload();
 };
+
