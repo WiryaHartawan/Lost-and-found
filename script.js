@@ -79,13 +79,13 @@ function loadData() {
                 const isMine = currentNick === v.user.toLowerCase();
                 if (currentFilter === "mine" && !isMine) return;
                 
-                // Menampilkan Deskripsi di Menu
+                // Menampilkan List dengan Label Nama Barang dan Lokasi
                 container.innerHTML += `
                     <div class="card">
                         ${isMine ? `<button class="btn-delete" onclick="hapusPostingan('${id}')">Hapus</button>` : ""}
                         ${v.img ? `<img src="${v.img}">` : ""}
-                        <strong>📦 ${v.item}</strong><br>
-                        <small>📍 ${v.loc}</small><br>
+                        <strong>📦 Nama Barang: ${v.item}</strong><br>
+                        <small>📍 Lokasi: ${v.loc}</small><br>
                         ${v.desc ? `<p style="font-size: 13px; color: #444; margin: 8px 0;">${v.desc}</p>` : ""}
                         <small style="color:#1877f2;">👤 Pelapor: ${v.user}</small>
                     </div>`;
@@ -114,7 +114,7 @@ document.getElementById('btn-posting').onclick = async () => {
     const n = document.getElementById('nama-barang'), 
           l = document.getElementById('lokasi-barang'), 
           f = document.getElementById('foto-barang'),
-          d = document.getElementById('deskripsi-barang'); // Kolom deskripsi baru
+          d = document.getElementById('deskripsi-barang');
 
     if (!n.value || !l.value) return tampilPesan("Isi Nama & Lokasi!");
     
@@ -124,7 +124,7 @@ document.getElementById('btn-posting').onclick = async () => {
     await push(ref(db, 'laporan_v2'), { 
         item: n.value, 
         loc: l.value, 
-        desc: d.value, // Menyimpan deskripsi
+        desc: d.value, 
         img: b64, 
         user: currentNick 
     });
