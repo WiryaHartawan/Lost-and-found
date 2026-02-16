@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lost & Found</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>🔍 Lost & Found</h1>
+            <p>Pusat Barang Hilang & Temuan Sekolah</p>
+        </header>
+
+        <section id="list-section">
+            <h3>Daftar Barang Temuan</h3>
+            <div id="item-list">
+                <p class="empty-msg">Belum ada barang yang dilaporkan.</p>
+            </div>
+            <button id="btn-show-form" onclick="toggleForm()">+ Laporkan Barang</button>
+        </section>
+
+        <section id="form-section" class="hidden">
+            <h3>Formulir Laporan</h3>
+            <input type="text" id="input-nama" placeholder="Nama Barang (misal: Kunci Motor)">
+            <input type="text" id="input-lokasi" placeholder="Lokasi Ditemukan">
+            <div class="photo-area">
+                <input type="file" id="input-foto" accept="image/*" capture="camera">
+            </div>
+            <div class="form-buttons">
+                <button onclick="saveItem()" class="btn-save">Posting</button>
+                <button onclick="toggleForm()" class="btn-cancel">Batal</button>
+            </div>
+        </section>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
