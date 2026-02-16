@@ -15,38 +15,77 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const dbRef = ref(db, 'laporan_v2');
 
-// Navigasi UI
+// --- FUNGSI KOMPRESI & BASE64 ---
+const processImage = (file) => {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // Perkecil dimensi jika terlalu besar (max 1200px)
+                const max_size = 1200;
+                if (width > height) {
+                    if (width > max_size) {
+                        height *= max_size / width;
+                        width = max_size;
+                    }
+                } else {
+                    if (height > max_size) {
+                        width *= max_size / height;
+                        height = max_size;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Kualitas 0.7 (70%) agar ukuran file teks Base64 ramping
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                resolve(dataUrl);
+            };
+        };
+    });
+};
+
+// --- LOGIKA UI ---
 const toggleUI = () => {
     document.getElementById('view-list').classList.toggle('hidden');
     document.getElementById('view-form').classList.toggle('hidden');
 };
 
-// Fungsi Kompres & Konversi Gambar ke Base64 (Teks)
-const convertToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
-};
-
-// Fungsi Kirim Data
 const kirimLaporan = async () => {
     const nama = document.getElementById('nama-barang').value;
     const lokasi = document.getElementById('lokasi-barang').value;
     const fileInput = document.getElementById('foto-barang');
+    const file = fileInput.files[0];
     const btn = document.getElementById('btn-posting');
 
     if (!nama || !lokasi) return alert("Nama dan Lokasi wajib diisi!");
+
+    // --- CEK LIMIT 5MB ---
+    if (file) {
+        const limitMB = 5;
+        if (file.size > limitMB * 1024 * 1024) {
+            alert(`File terlalu besar! Maksimal ${limitMB}MB.`);
+            return;
+        }
+    }
 
     btn.disabled = true;
     btn.innerText = "Sedang Memposting...";
 
     try {
         let base64String = "";
-        if (fileInput.files.length > 0) {
-            base64String = await convertToBase64(fileInput.files[0]);
+        if (file) {
+            base64String = await processImage(file);
         }
 
         await push(dbRef, {
@@ -62,20 +101,20 @@ const kirimLaporan = async () => {
         fileInput.value = "";
         toggleUI();
     } catch (error) {
-        alert("Gagal: " + error.message);
+        console.error(error);
+        alert("Gagal memposting. Cek koneksi internet.");
     } finally {
         btn.disabled = false;
         btn.innerText = "Posting Sekarang";
     }
 };
 
-// Inisialisasi Event Listener
+// --- EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-buka-form').onclick = toggleUI;
     document.getElementById('btn-batal').onclick = toggleUI;
     document.getElementById('btn-posting').onclick = kirimLaporan;
 
-    // Tampilkan data Real-time
     onValue(dbRef, (snapshot) => {
         const listContainer = document.getElementById('item-list');
         listContainer.innerHTML = "";
@@ -86,10 +125,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const item = data[key];
                 listContainer.innerHTML += `
                     <div class="card">
-                        ${item.gambar ? `<img src="${item.gambar}">` : ""}
-                        <strong>📦 ${item.nama}</strong><br>
-                        <small>📍 ${item.lokasi}</small><br>
-                        <i style="font-size: 11px; color: gray;">${item.waktu}</i>
+                        ${item.gambar ? `<img src="${item.gambar}" loading="lazy">` : ""}
+                        <div style="padding: 10px;">
+                            <strong>📦 ${item.nama}</strong><br>
+                            <small>📍 ${item.lokasi}</small><br>
+                            <i style="font-size: 11px; color: gray;">${item.waktu}</i>
+                        </div>
                     </div>`;
             });
         } else {
