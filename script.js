@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// 1. Konfigurasi Firebase Kamu
 const firebaseConfig = {
     apiKey: "AIzaSyBw9bZb08ux2Ft2ywM4Kygo3-FYEfWD-6I",
     authDomain: "lostfound-927df.firebaseapp.com",
@@ -12,64 +11,49 @@ const firebaseConfig = {
     appId: "1:659071189789:web:f83742d4fb804b175a57f4"
 };
 
-// 2. Inisialisasi
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const barangRef = ref(db, 'items');
 
-// --- FUNGSI UI (Buka/Tutup Form) ---
-const toggleTampilan = () => {
+// Fungsi Toggle (Buka/Tutup Form)
+window.toggleForm = () => {
     document.getElementById('form-section').classList.toggle('hidden');
     document.getElementById('list-section').classList.toggle('hidden');
-};
+}
 
-// --- FUNGSI SIMPAN DATA ---
-const simpanKeFirebase = () => {
+// Fungsi Simpan ke Firebase
+window.saveItem = () => {
     const nama = document.getElementById('input-nama').value;
     const lokasi = document.getElementById('input-lokasi').value;
 
-    if (nama.trim() && lokasi.trim()) {
-        push(barangRef, {
+    if (nama && lokasi) {
+        push(ref(db, 'items'), {
             nama: nama,
             lokasi: lokasi,
-            waktu: new Date().toLocaleString('id-ID')
+            waktu: new Date().toLocaleTimeString()
         }).then(() => {
-            alert("Berhasil dilaporkan!");
+            alert("Berhasil Terkirim!");
             document.getElementById('input-nama').value = "";
             document.getElementById('input-lokasi').value = "";
-            toggleTampilan();
-        }).catch((err) => alert("Gagal: " + err.message));
-    } else {
-        alert("Mohon isi semua kolom!");
-    }
-};
-
-// --- TAMPILKAN DATA SECARA REAL-TIME ---
-onValue(barangRef, (snapshot) => {
-    const listContainer = document.getElementById('item-list');
-    const data = snapshot.val();
-    listContainer.innerHTML = "";
-
-    if (data) {
-        Object.keys(data).reverse().forEach(id => {
-            const item = data[id];
-            const element = `
-                <div class="card">
-                    <strong>📦 ${item.nama}</strong>
-                    <p>📍 ${item.lokasi}</p>
-                    <small>${item.waktu}</small>
-                </div>
-            `;
-            listContainer.innerHTML += element;
+            window.toggleForm();
         });
     } else {
-        listContainer.innerHTML = "<p>Belum ada barang dilaporkan.</p>";
+        alert("Lengkapi data!");
     }
-});
+}
 
-// --- PASANG EVENT LISTENER (Pengganti onclick) ---
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('btn-buka-form').addEventListener('click', toggleTampilan);
-    document.getElementById('btn-batal').addEventListener('click', toggleTampilan);
-    document.getElementById('btn-simpan').addEventListener('click', simpanKeFirebase);
+// Menampilkan Data Secara Otomatis (Real-time)
+onValue(ref(db, 'items'), (snapshot) => {
+    const list = document.getElementById('item-list');
+    const data = snapshot.val();
+    list.innerHTML = "";
+    if (data) {
+        Object.keys(data).reverse().forEach(key => {
+            const item = data[key];
+            list.innerHTML += `
+                <div class="card" style="border:1px solid #ddd; padding:10px; margin:10px; border-radius:10px;">
+                    <strong>📦 ${item.nama}</strong><br>
+                    <small>📍 ${item.lokasi} | 🕒 ${item.waktu}</small>
+                </div>`;
+        });
+    }
 });
