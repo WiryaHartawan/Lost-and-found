@@ -67,22 +67,7 @@ window.addEventListener('load', () => {
     if (sn && sp) loginLogic(sn, sp, true);
 });
 
-// --- FILTER TAB ---
-document.getElementById('tab-all').onclick = () => {
-    currentFilter = "all";
-    document.getElementById('tab-bg').classList.remove('slide-right');
-    document.getElementById('tab-mine').classList.remove('active');
-    document.getElementById('tab-all').classList.add('active');
-    loadData();
-};
-document.getElementById('tab-mine').onclick = () => {
-    currentFilter = "mine";
-    document.getElementById('tab-bg').classList.add('slide-right');
-    document.getElementById('tab-all').classList.remove('active');
-    document.getElementById('tab-mine').classList.add('active');
-    loadData();
-};
-
+// --- LOAD DATA & DISPLAY ---
 function loadData() {
     onValue(ref(db, 'laporan_v2'), (s) => {
         const container = document.getElementById('item-list');
@@ -93,12 +78,15 @@ function loadData() {
                 const v = data[id];
                 const isMine = currentNick === v.user.toLowerCase();
                 if (currentFilter === "mine" && !isMine) return;
+                
+                // Menampilkan Deskripsi di Menu
                 container.innerHTML += `
                     <div class="card">
                         ${isMine ? `<button class="btn-delete" onclick="hapusPostingan('${id}')">Hapus</button>` : ""}
                         ${v.img ? `<img src="${v.img}">` : ""}
                         <strong>📦 ${v.item}</strong><br>
                         <small>📍 ${v.loc}</small><br>
+                        ${v.desc ? `<p style="font-size: 13px; color: #444; margin: 8px 0;">${v.desc}</p>` : ""}
                         <small style="color:#1877f2;">👤 Pelapor: ${v.user}</small>
                     </div>`;
             });
@@ -106,14 +94,7 @@ function loadData() {
     });
 }
 
-window.hapusPostingan = (id) => {
-    tampilPesan("Apakah Anda yakin ingin menghapus laporan ini?", true, async () => {
-        await remove(ref(db, 'laporan_v2/' + id));
-        tampilPesan("Laporan berhasil dihapus.");
-    });
-};
-
-// --- POSTING ---
+// --- POSTING WITH DESCRIPTION ---
 const compress = (file) => {
     return new Promise((resolve) => {
         const reader = new FileReader(); reader.readAsDataURL(file);
@@ -130,27 +111,60 @@ const compress = (file) => {
 };
 
 document.getElementById('btn-posting').onclick = async () => {
-    const n = document.getElementById('nama-barang'), l = document.getElementById('lokasi-barang'), f = document.getElementById('foto-barang');
+    const n = document.getElementById('nama-barang'), 
+          l = document.getElementById('lokasi-barang'), 
+          f = document.getElementById('foto-barang'),
+          d = document.getElementById('deskripsi-barang'); // Kolom deskripsi baru
+
     if (!n.value || !l.value) return tampilPesan("Isi Nama & Lokasi!");
+    
     document.getElementById('btn-posting').disabled = true;
     let b64 = f.files[0] ? await compress(f.files[0]) : "";
-    await push(ref(db, 'laporan_v2'), { item: n.value, loc: l.value, img: b64, user: currentNick });
+
+    await push(ref(db, 'laporan_v2'), { 
+        item: n.value, 
+        loc: l.value, 
+        desc: d.value, // Menyimpan deskripsi
+        img: b64, 
+        user: currentNick 
+    });
+
     tampilPesan("Berhasil Terposting!");
-    n.value = ""; l.value = ""; f.value = "";
+    n.value = ""; l.value = ""; f.value = ""; d.value = ""; 
     document.getElementById('view-form').classList.add('hidden');
     document.getElementById('view-list').classList.remove('hidden');
     document.getElementById('btn-posting').disabled = false;
 };
 
-// --- EVENTS ---
-document.getElementById('btn-login-action').onclick = () => loginLogic(document.getElementById('login-nick').value, document.getElementById('login-pass').value);
+// --- OTHER APP LOGIC ---
+window.hapusPostingan = (id) => {
+    tampilPesan("Apakah Anda yakin ingin menghapus laporan ini?", true, async () => {
+        await remove(ref(db, 'laporan_v2/' + id));
+        tampilPesan("Laporan berhasil dihapus.");
+    });
+};
+
+document.getElementById('tab-all').onclick = () => {
+    currentFilter = "all";
+    document.getElementById('tab-bg').classList.remove('slide-right');
+    document.getElementById('tab-mine').classList.remove('active');
+    document.getElementById('tab-all').classList.add('active');
+    loadData();
+};
+document.getElementById('tab-mine').onclick = () => {
+    currentFilter = "mine";
+    document.getElementById('tab-bg').classList.add('slide-right');
+    document.getElementById('tab-all').classList.remove('active');
+    document.getElementById('tab-mine').classList.add('active');
+    loadData();
+};
+
 document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
 document.getElementById('go-to-reg').onclick = () => { document.getElementById('login-section').classList.add('hidden'); document.getElementById('register-section').classList.remove('hidden'); };
 document.getElementById('go-to-login').onclick = () => { document.getElementById('register-section').classList.add('hidden'); document.getElementById('login-section').classList.remove('hidden'); };
 document.getElementById('btn-buka-form').onclick = () => { document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-form').classList.remove('hidden'); };
 document.getElementById('btn-batal').onclick = () => { document.getElementById('view-form').classList.add('hidden'); document.getElementById('view-list').classList.remove('hidden'); };
 
-// TOGGLE PASS
 const regToggles = ['toggle-l', 'toggle-r1', 'toggle-r2'];
 const regInputs = ['login-pass', 'reg-pass', 'reg-confirm'];
 regToggles.forEach((id, i) => {
