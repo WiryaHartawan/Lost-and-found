@@ -59,7 +59,7 @@ window.handleRegister = async () => {
         whatsapp: wa
     });
     
-    tampilPesan("Akun berhasil dibuat! Silakan login.");
+    tampilPesan("Berhasil Daftar!");
     showSection('login-section');
 };
 
@@ -76,16 +76,13 @@ window.handleLogin = async () => {
         showSection('main-app');
         loadData();
     } else {
-        tampilPesan("Nickname atau Password salah!");
+        tampilPesan("Login Gagal!");
     }
 };
 
-window.handleLogout = () => {
-    localStorage.clear();
-    location.reload();
-};
+window.handleLogout = () => { localStorage.clear(); location.reload(); };
 
-// --- FORGOT PASSWORD (OTP SIMULATION) ---
+// --- FORGOT PASS ---
 window.sendOTP = async () => {
     const emailInput = document.getElementById('forgot-email').value.trim();
     const usersSnap = await get(ref(db, 'users'));
@@ -100,12 +97,11 @@ window.sendOTP = async () => {
 
     if (found) {
         generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-        // Simulasi: Karena ini client-side, kita tampilkan OTP via alert (Ganti dengan API Mailer di server)
-        alert("KODE OTP ANDA: " + generatedOTP + "\n(Simulasi email terkirim)");
+        alert("KODE OTP: " + generatedOTP);
         document.getElementById('forgot-step-1').classList.add('hidden');
         document.getElementById('forgot-step-2').classList.remove('hidden');
     } else {
-        tampilPesan("Email tidak terdaftar!");
+        tampilPesan("Gmail tidak ditemukan!");
     }
 };
 
@@ -115,20 +111,20 @@ window.verifyAndReset = async () => {
 
     if (userOTP === generatedOTP && newPass.length > 0) {
         await set(ref(db, `users/${targetUserNick}/password`), newPass);
-        tampilPesan("Password berhasil direset!");
+        tampilPesan("Password Diperbarui!");
         showSection('login-section');
     } else {
-        tampilPesan("OTP salah atau data tidak lengkap!");
+        tampilPesan("Data Salah!");
     }
 };
 
-// --- DATA LOGIC ---
+// --- DATA LIST ---
 function loadData() {
     onValue(ref(db, 'laporan_v2'), async (s) => {
         const container = document.getElementById('item-list');
         container.innerHTML = "";
         const data = s.val();
-        if (!data) return container.innerHTML = "<p style='text-align:center;color:gray;'>Belum ada laporan.</p>";
+        if (!data) return container.innerHTML = "<p style='text-align:center;color:gray;'>Kosong.</p>";
 
         const usersSnap = await get(ref(db, 'users'));
         const usersData = usersSnap.val();
@@ -149,7 +145,7 @@ function loadData() {
                     <span>📦 Nama Barang: ${v.item}</span><br>
                     <small>📍 Lokasi: ${v.loc}</small><br>
                     ${v.desc ? `<p style="font-size: 13px; color: #444; margin: 8px 0;">${v.desc}</p>` : ""}
-                    <small style="color:#1877f2;">👤 Pelapor: ${namaKapital}</small><br>
+                    <small style="color:#1877f2;">👤 Pelapor: ${namaKapital}</small>
                     ${waNumber && !isMine ? `
                         <a href="https://wa.me/${waNumber.replace(/^0/, '62')}" target="_blank" class="btn-wa">
                             Hubungi via WhatsApp
@@ -161,9 +157,7 @@ function loadData() {
 }
 
 window.hapusPostingan = (id) => {
-    if(confirm("Hapus laporan ini?")) {
-        remove(ref(db, 'laporan_v2/' + id));
-    }
+    if(confirm("Hapus?")) remove(ref(db, 'laporan_v2/' + id));
 };
 
 window.setFilter = (f) => {
@@ -174,7 +168,6 @@ window.setFilter = (f) => {
     loadData();
 };
 
-// --- COMPRESS IMAGE ---
 const compress = (file) => {
     return new Promise((resolve) => {
         const reader = new FileReader(); reader.readAsDataURL(file);
@@ -196,22 +189,19 @@ window.handlePosting = async () => {
 
     if (!n.value || !l.value) return tampilPesan("Isi Nama & Lokasi!");
     
-    const btn = document.getElementById('btn-posting');
-    btn.disabled = true; btn.innerText = "Memproses...";
-
+    document.getElementById('btn-posting').disabled = true;
     let b64 = f.files[0] ? await compress(f.files[0]) : "";
 
     await push(ref(db, 'laporan_v2'), {
         item: n.value, loc: l.value, desc: d.value, img: b64, user: currentNick
     });
 
-    tampilPesan("Berhasil Terposting!");
+    tampilPesan("Terposting!");
     n.value = ""; l.value = ""; f.value = ""; d.value = "";
     showView('view-list');
-    btn.disabled = false; btn.innerText = "Posting Sekarang";
+    document.getElementById('btn-posting').disabled = false;
 };
 
-// Auto Login
 window.onload = () => {
     const sn = localStorage.getItem('savedNick'), sp = localStorage.getItem('savedPass');
     if (sn && sp) window.handleLogin();
