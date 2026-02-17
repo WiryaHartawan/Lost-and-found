@@ -16,7 +16,7 @@
         .btn-main { background: #1877f2; color: white; }
         .btn-save { background: #42b72a; color: white; }
         .btn-cancel { background: #f02849; color: white; }
-        .btn-wa { background: #25D366; color: white; padding: 10px; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 8px; margin-top: 10px; }
+        .btn-wa { background: #25D366; color: white; padding: 10px; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 8px; margin-top: 10px; font-weight: bold; }
         .btn-delete { background: #ff4d4d; color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; float: right; }
         
         .link-auth { color: #1877f2; cursor: pointer; text-decoration: underline; font-size: 14px; text-align: center; display: block; margin-top: 10px; }
@@ -28,7 +28,7 @@
         .slide-right { transform: translateX(100%); }
 
         .card { background: white; border: 1px solid #ddd; padding: 15px; margin-top: 15px; border-radius: 10px; }
-        .card img { width: 100%; border-radius: 8px; margin-bottom: 10px; }
+        .card img { width: 100%; border-radius: 8px; margin-bottom: 10px; display: block; }
         
         .pass-container { position: relative; }
         .toggle-pass { position: absolute; right: 10px; top: 18px; cursor: pointer; font-size: 11px; color: #1877f2; font-weight: bold; }
@@ -59,6 +59,10 @@
             <div class="pass-container">
                 <input type="password" id="reg-pass" placeholder="Password">
                 <span class="toggle-pass" onclick="togglePass('reg-pass')">LIHAT</span>
+            </div>
+            <div class="pass-container">
+                <input type="password" id="reg-confirm" placeholder="Konfirmasi Password">
+                <span class="toggle-pass" onclick="togglePass('reg-confirm')">LIHAT</span>
             </div>
             <button onclick="handleRegister()" class="btn-save">Daftar</button>
             <p class="link-auth" onclick="showSection('login-section')">Kembali ke Login</p>
