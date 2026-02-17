@@ -13,9 +13,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-
-// INISIALISASI EMAILJS
-emailjs.init("dAs5GtBjjvQR-Ak1C"); 
+emailjs.init("dAs5GtBjjvQR-Ak1C");
 
 let generatedOTP = "";
 
@@ -24,7 +22,27 @@ window.tampilPesan = (msg) => {
     document.getElementById('custom-alert').classList.remove('hidden');
 };
 
-// --- LOGIKA RESET PASSWORD ---
+async function prosesLogin(id, pass, isAuto = false) {
+    const s = await get(ref(db, 'users'));
+    let userKey = null;
+    s.forEach(c => { 
+        if((c.key === id || c.val().email.toLowerCase() === id) && c.val().password === pass) {
+            userKey = c.key; 
+        }
+    });
+
+    if(userKey) {
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        document.getElementById('display-nick').innerText = userKey.charAt(0).toUpperCase() + userKey.slice(1);
+        localStorage.setItem('userPenemu', userKey); 
+        localStorage.setItem('passPenemu', pass);
+    } else {
+        if(!isAuto) tampilPesan("ID atau Password salah!");
+        localStorage.clear();
+    }
+}
+
 document.getElementById('btn-forgot-password').onclick = () => {
     document.getElementById('reset-modal').classList.remove('hidden');
     document.getElementById('step-email').classList.remove('hidden');
@@ -35,30 +53,26 @@ document.getElementById('btn-send-otp').onclick = async () => {
     const email = document.getElementById('reset-email-input').value.trim();
     if (!email) return tampilPesan("Masukkan email!");
 
-    // Cek apakah email terdaftar di Firebase
     const usersSnap = await get(ref(db, 'users'));
-    let userFound = false;
-    usersSnap.forEach(c => { if(c.val().email.toLowerCase() === email.toLowerCase()) userFound = true; });
+    let found = false;
+    usersSnap.forEach(c => { if(c.val().email.toLowerCase() === email.toLowerCase()) found = true; });
 
-    if (!userFound) return tampilPesan("Email tidak terdaftar di sistem Penemu!");
+    if (!found) return tampilPesan("Email tidak terdaftar!");
 
-    // Generate OTP & Kirim
     generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
     const btn = document.getElementById('btn-send-otp');
     btn.innerText = "Mengirim..."; btn.disabled = true;
 
-    // Menggunakan Service ID: penemu & Template ID: template_laaee1i
     emailjs.send("penemu", "template_laaee1i", {
-        email: email,             // Untuk {{email}}
-        passcode: generatedOTP,    // Untuk {{passcode}}
-        time: new Date().toLocaleTimeString() // Untuk {{time}}
+        email: email,
+        passcode: generatedOTP,
+        time: new Date().toLocaleTimeString()
     }).then(() => {
-        tampilPesan("Kode OTP telah dikirim ke email!");
+        tampilPesan("OTP terkirim!");
         document.getElementById('step-email').classList.add('hidden');
         document.getElementById('step-otp').classList.remove('hidden');
-    }).catch(err => {
-        tampilPesan("Gagal kirim OTP. Cek Service ID!");
-        console.error(err);
+    }).catch(() => {
+        tampilPesan("Gagal kirim OTP!");
     }).finally(() => {
         btn.innerText = "Kirim Kode OTP"; btn.disabled = false;
     });
@@ -69,35 +83,33 @@ document.getElementById('btn-verify-reset').onclick = async () => {
     const newPass = document.getElementById('new-pass-input').value;
     const email = document.getElementById('reset-email-input').value;
 
-    if (inputOTP !== generatedOTP) return tampilPesan("Kode OTP Salah!");
-    if (newPass.length < 6) return tampilPesan("Password baru minimal 6 karakter!");
+    if (inputOTP !== generatedOTP) return tampilPesan("OTP Salah!");
+    if (newPass.length < 6) return tampilPesan("Min 6 Karakter!");
 
     const s = await get(ref(db, 'users'));
-    s.forEach(async (c) => {
-        if(c.val().email.toLowerCase() === email.toLowerCase()) {
-            await set(ref(db, `users/${c.key}/password`), newPass);
-            tampilPesan("Sukses! Silahkan login dengan password baru.");
-            document.getElementById('reset-modal').classList.add('hidden');
-        }
-    });
-};
+    let targetKey = null;
+    s.forEach(c => { if(c.val().email.toLowerCase() === email.toLowerCase()) targetKey = c.key; });
 
-// --- LOGIN DASAR ---
-document.getElementById('btn-login-action').onclick = async () => {
-    const id = document.getElementById('login-id').value.toLowerCase();
-    const pass = document.getElementById('login-pass').value;
-    
-    const s = await get(ref(db, 'users'));
-    let valid = false;
-    s.forEach(c => { if((c.key === id || c.val().email.toLowerCase() === id) && c.val().password === pass) valid = c.key; });
-
-    if(valid) {
-        document.getElementById('login-section').classList.add('hidden');
-        document.getElementById('main-app').classList.remove('hidden');
-        document.getElementById('display-nick').innerText = valid;
-    } else {
-        tampilPesan("ID atau Password salah!");
+    if(targetKey) {
+        await set(ref(db, `users/${targetKey}/password`), newPass);
+        localStorage.setItem('passPenemu', newPass);
+        tampilPesan("Password diperbarui!");
+        document.getElementById('reset-modal').classList.add('hidden');
+        prosesLogin(targetKey, newPass);
     }
 };
 
-document.getElementById('btn-logout').onclick = () => location.reload();
+document.getElementById('btn-login-action').onclick = () => {
+    prosesLogin(document.getElementById('login-id').value.toLowerCase(), document.getElementById('login-pass').value);
+};
+
+document.getElementById('btn-logout').onclick = () => {
+    localStorage.clear();
+    location.reload();
+};
+
+window.onload = () => {
+    const u = localStorage.getItem('userPenemu');
+    const p = localStorage.getItem('passPenemu');
+    if(u && p) prosesLogin(u, p, true);
+};
