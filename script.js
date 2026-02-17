@@ -16,8 +16,9 @@ const db = getDatabase(app);
 let currentNick = "";
 let currentFilter = "all";
 let searchQuery = "";
+let idYangAkanDihapus = null;
 
-// Fungsi Kapital Huruf Depan
+// Utilitas Kapital Huruf Depan
 const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 const tampilPesan = (msg) => {
@@ -25,7 +26,7 @@ const tampilPesan = (msg) => {
     document.getElementById('custom-alert').classList.remove('hidden');
 };
 
-// --- LOGIN LOGIC ---
+// --- LOGIKA LOGIN & AUTO-LOGIN ---
 async function prosesLogin(idInput, passInput, isAuto = false) {
     const usersSnap = await get(ref(db, 'users'));
     let found = false;
@@ -52,6 +53,26 @@ document.getElementById('btn-login-action').onclick = () => {
     prosesLogin(id, pass);
 };
 
+// --- LOGIKA HAPUS (CUSTOM MODAL) ---
+window.hapusPost = (id) => {
+    idYangAkanDihapus = id;
+    document.getElementById('confirm-modal').classList.remove('hidden');
+};
+
+document.getElementById('btn-confirm-yes').onclick = async () => {
+    if (idYangAkanDihapus) {
+        await remove(ref(db, 'laporan_v2/' + idYangAkanDihapus));
+        idYangAkanDihapus = null;
+        document.getElementById('confirm-modal').classList.add('hidden');
+        tampilPesan("Laporan berhasil dihapus!");
+    }
+};
+
+document.getElementById('btn-confirm-no').onclick = () => {
+    idYangAkanDihapus = null;
+    document.getElementById('confirm-modal').classList.add('hidden');
+};
+
 // --- SEARCH & DATA LOADING ---
 document.getElementById('search-input').oninput = (e) => {
     searchQuery = e.target.value.toLowerCase();
@@ -72,10 +93,8 @@ function loadData() {
             const v = data[id];
             const isMine = currentNick === v.user.toLowerCase();
             
-            // Filter 1: Slider (Semua vs Milik Saya)
+            // Filter Slider & Search
             if (currentFilter === "mine" && !isMine) return;
-
-            // Filter 2: Search Bar (Berdasarkan Nama Barang)
             if (searchQuery && !v.item.toLowerCase().includes(searchQuery)) return;
 
             const userData = users[v.user.toLowerCase()] || {};
@@ -99,7 +118,7 @@ function loadData() {
     });
 }
 
-// --- NAVIGATION & TABS ---
+// --- TABS & NAVIGATION ---
 document.getElementById('tab-all').onclick = () => {
     currentFilter = "all";
     document.getElementById('tab-bg').classList.remove('slide-right');
@@ -115,10 +134,6 @@ document.getElementById('tab-mine').onclick = () => {
     loadData();
 };
 
-// Menghapus data
-window.hapusPost = (id) => { if(confirm("Hapus laporan?")) remove(ref(db, 'laporan_v2/' + id)); };
-
-// Tombol Posting
 document.getElementById('btn-posting').onclick = async () => {
     const n = document.getElementById('nama-barang'), l = document.getElementById('lokasi-barang'), 
           d = document.getElementById('deskripsi-barang'), f = document.getElementById('foto-barang');
@@ -137,7 +152,6 @@ document.getElementById('btn-posting').onclick = async () => {
     document.getElementById('view-list').classList.remove('hidden');
 };
 
-// Navigasi Form
 document.getElementById('btn-buka-form').onclick = () => {
     document.getElementById('nama-barang').value = "";
     document.getElementById('lokasi-barang').value = "";
