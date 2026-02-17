@@ -18,13 +18,15 @@
         .btn-save { background: #42b72a; color: white; }
         .btn-cancel { background: #f02849; color: white; }
         .btn-delete { background: #ff4d4d; color: white; padding: 10px; border-radius: 8px; font-size: 14px; margin-top: 10px; border: none; cursor: pointer; width: 100%; }
+        
+        /* Gaya Link Biru Bergaris Bawah */
         .link-style { color: #1877f2; text-decoration: underline; cursor: pointer; font-size: 14px; text-align: center; display: block; margin-top: 15px; }
         .wa-link { color: #0000EE; text-decoration: underline; font-weight: bold; }
 
         /* Search Bar */
         .search-container { position: relative; margin-bottom: 10px; }
-        #search-input { padding-left: 35px; border-radius: 20px; background: #f0f2f5; border: none; }
-        .search-icon { position: absolute; left: 12px; top: 18px; font-size: 14px; color: #888; }
+        #search-input { padding-left: 35px; border-radius: 20px; background: #f0f2f5; border: none; height: 45px; }
+        .search-icon { position: absolute; left: 12px; top: 13px; font-size: 14px; color: #888; }
 
         /* Slider Filter */
         .filter-tab { display: flex; background: #eee; border-radius: 10px; margin-bottom: 15px; padding: 5px; position: relative; }
@@ -40,8 +42,10 @@
         
         .pass-container { position: relative; width: 100%; }
         .toggle-pass { position: absolute; right: 10px; top: 18px; cursor: pointer; font-size: 11px; color: #1877f2; font-weight: bold; }
+
+        /* Modal Overlay */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 9999; }
-        .modal-box { background: white; padding: 20px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; }
+        .modal-box { background: white; padding: 25px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; }
     </style>
 </head>
 <body>
@@ -103,6 +107,16 @@
 
     <div id="custom-alert" class="modal-overlay hidden">
         <div class="modal-box"><p id="modal-msg"></p><button onclick="document.getElementById('custom-alert').classList.add('hidden')" class="btn-main">OK</button></div>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <p style="font-weight: bold; margin-bottom: 20px;">Hapus laporan ini?</p>
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-confirm-yes" class="btn-cancel" style="margin:0;">Ya, Hapus</button>
+                <button id="btn-confirm-no" class="btn-main" style="margin:0; background: #888;">Batal</button>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="script.js"></script>
