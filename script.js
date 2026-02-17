@@ -22,6 +22,16 @@ window.tampilPesan = (msg) => {
     document.getElementById('custom-alert').classList.remove('hidden');
 };
 
+document.getElementById('btn-buka-form').onclick = () => {
+    document.getElementById('view-list').classList.add('hidden');
+    document.getElementById('view-form').classList.remove('hidden');
+};
+
+document.getElementById('btn-batal').onclick = () => {
+    document.getElementById('view-form').classList.add('hidden');
+    document.getElementById('view-list').classList.remove('hidden');
+};
+
 async function prosesLogin(id, pass, isAuto = false) {
     const s = await get(ref(db, 'users'));
     let userKey = null;
@@ -52,17 +62,13 @@ document.getElementById('btn-forgot-password').onclick = () => {
 document.getElementById('btn-send-otp').onclick = async () => {
     const email = document.getElementById('reset-email-input').value.trim();
     if (!email) return tampilPesan("Masukkan email!");
-
     const usersSnap = await get(ref(db, 'users'));
     let found = false;
     usersSnap.forEach(c => { if(c.val().email.toLowerCase() === email.toLowerCase()) found = true; });
-
     if (!found) return tampilPesan("Email tidak terdaftar!");
-
     generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
     const btn = document.getElementById('btn-send-otp');
     btn.innerText = "Mengirim..."; btn.disabled = true;
-
     emailjs.send("penemu", "template_laaee1i", {
         email: email,
         passcode: generatedOTP,
@@ -82,14 +88,11 @@ document.getElementById('btn-verify-reset').onclick = async () => {
     const inputOTP = document.getElementById('otp-input').value;
     const newPass = document.getElementById('new-pass-input').value;
     const email = document.getElementById('reset-email-input').value;
-
     if (inputOTP !== generatedOTP) return tampilPesan("OTP Salah!");
     if (newPass.length < 6) return tampilPesan("Min 6 Karakter!");
-
     const s = await get(ref(db, 'users'));
     let targetKey = null;
     s.forEach(c => { if(c.val().email.toLowerCase() === email.toLowerCase()) targetKey = c.key; });
-
     if(targetKey) {
         await set(ref(db, `users/${targetKey}/password`), newPass);
         localStorage.setItem('passPenemu', newPass);
