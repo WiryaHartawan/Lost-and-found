@@ -13,31 +13,16 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-emailjs.init("USER_PUBLIC_KEY_ANDA"); // Ganti dengan Public Key EmailJS Anda
+emailjs.init("dAs5GtBjjvQR-Ak1C"); // Public Key Anda
 
-let currentNick = "", currentFilter = "all", searchQuery = "", generatedOTP = "", idYangAkanDihapus = null;
+let currentNick = "", currentFilter = "all", searchQuery = "", generatedOTP = "";
 
-const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
-const tampilPesan = (msg) => { document.getElementById('modal-msg').innerText = msg; document.getElementById('custom-alert').classList.remove('hidden'); };
-
-// --- THEME ENGINE ---
-const setTheme = (theme) => {
-    document.body.setAttribute('data-theme', theme);
-    localStorage.setItem('themePenemu', theme);
-    if (theme === 'dark') {
-        document.getElementById('theme-slider').classList.add('slide-dark');
-        document.getElementById('text-light').classList.remove('active');
-        document.getElementById('text-dark').classList.add('active');
-    } else {
-        document.getElementById('theme-slider').classList.remove('slide-dark');
-        document.getElementById('text-light').classList.add('active');
-        document.getElementById('text-dark').classList.remove('active');
-    }
+const tampilPesan = (msg) => {
+    document.getElementById('modal-msg').innerText = msg;
+    document.getElementById('custom-alert').classList.remove('hidden');
 };
 
-document.getElementById('theme-toggle').onclick = () => setTheme(document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-
-// --- RESET PASSWORD ENGINE ---
+// --- LOGIKA RESET PASSWORD ---
 document.getElementById('btn-forgot-password').onclick = () => {
     document.getElementById('reset-modal').classList.remove('hidden');
     document.getElementById('step-email').classList.remove('hidden');
@@ -45,78 +30,86 @@ document.getElementById('btn-forgot-password').onclick = () => {
 };
 
 document.getElementById('btn-send-otp').onclick = async () => {
-    const email = document.getElementById('reset-email-input').value;
-    const usersSnap = await get(ref(db, 'users'));
-    let userFound = false;
-    usersSnap.forEach(c => { if(c.val().email.toLowerCase() === email.toLowerCase()) userFound = true; });
+    const email = document.getElementById('reset-email-input').value.trim();
+    if (!email) return tampilPesan("Masukkan email!");
 
-    if(!userFound) return tampilPesan("Email tidak terdaftar!");
+    const usersSnap = await get(ref(db, 'users'));
+    let found = false;
+    usersSnap.forEach(c => { if(c.val().email.toLowerCase() === email.toLowerCase()) found = true; });
+
+    if (!found) return tampilPesan("Email tidak terdaftar!");
 
     generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Sesuai template gambar Anda
-    emailjs.send("service_id", "template_id", {
+    const btn = document.getElementById('btn-send-otp');
+    btn.innerText = "Mengirim..."; btn.disabled = true;
+
+    // GANTI "service_id" di bawah ini dengan Service ID EmailJS Anda
+    emailjs.send("service_9p57qre", "template_laaee1i", {
         email: email,
         passcode: generatedOTP,
         time: new Date().toLocaleTimeString()
     }).then(() => {
-        tampilPesan("OTP terkirim!");
+        tampilPesan("OTP terkirim ke email!");
         document.getElementById('step-email').classList.add('hidden');
         document.getElementById('step-otp').classList.remove('hidden');
+    }).catch(err => {
+        tampilPesan("Gagal kirim OTP. Cek Service ID!");
+        console.error(err);
+    }).finally(() => {
+        btn.innerText = "Kirim Kode OTP"; btn.disabled = false;
     });
 };
 
 document.getElementById('btn-verify-reset').onclick = async () => {
-    if(document.getElementById('otp-input').value !== generatedOTP) return tampilPesan("OTP Salah!");
-    const email = document.getElementById('reset-email-input').value;
+    const inputOTP = document.getElementById('otp-input').value;
     const newPass = document.getElementById('new-pass-input').value;
-    
+    const email = document.getElementById('reset-email-input').value;
+
+    if (inputOTP !== generatedOTP) return tampilPesan("OTP Salah!");
+    if (newPass.length < 6) return tampilPesan("Password min 6 karakter!");
+
     const s = await get(ref(db, 'users'));
-    s.forEach(async c => {
+    s.forEach(async (c) => {
         if(c.val().email.toLowerCase() === email.toLowerCase()) {
             await set(ref(db, `users/${c.key}/password`), newPass);
-            tampilPesan("Sukses! Silahkan Login.");
+            tampilPesan("Password diperbarui! Silahkan login.");
             document.getElementById('reset-modal').classList.add('hidden');
         }
     });
 };
 
-// --- CORE APP ---
-function loadData() {
-    onValue(ref(db, 'laporan_v2'), async (s) => {
-        const container = document.getElementById('item-list'); container.innerHTML = "";
-        const data = s.val(); if (!data) return;
-        const uSnap = await get(ref(db, 'users')); const users = uSnap.val() || {};
+// --- LOGIKA TEMA ---
+const setTheme = (theme) => {
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('themePenemu', theme);
+    const isDark = theme === 'dark';
+    document.getElementById('theme-slider').classList.toggle('slide-dark', isDark);
+    document.getElementById('text-light').classList.toggle('active', !isDark);
+    document.getElementById('text-dark').classList.toggle('active', isDark);
+};
+document.getElementById('theme-toggle').onclick = () => setTheme(document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
 
-        Object.keys(data).reverse().forEach(id => {
-            const v = data[id];
-            if (currentFilter === "mine" && currentNick !== v.user.toLowerCase()) return;
-            if (searchQuery && !v.item.toLowerCase().includes(searchQuery)) return;
-
-            const wa = (users[v.user.toLowerCase()] || {}).whatsapp || "";
-            container.innerHTML += `
-                <div class="card">
-                    ${v.img ? `<img src="${v.img}">` : ""}
-                    <div class="info-row">📦 <b>${v.item}</b></div>
-                    <div class="info-row">📍 <b>${v.loc}</b></div>
-                    <div class="info-row">👤 <b>${capitalize(v.user)}</b></div>
-                    ${wa ? `<a href="https://wa.me/${wa.replace(/^0/,'62')}" target="_blank" class="wa-link">Chat Pelapor</a>` : ""}
-                    ${currentNick === v.user.toLowerCase() ? `<button class="btn-delete" onclick="hapusPost('${id}')">Hapus</button>` : ""}
-                </div>`;
-        });
-    });
+// --- LOGIN & CORE ---
+async function prosesLogin(id, pass) {
+    const s = await get(ref(db, 'users'));
+    let userKey = null;
+    s.forEach(c => { if((c.key === id || c.val().email.toLowerCase() === id) && c.val().password === pass) userKey = c.key; });
+    if(userKey) {
+        currentNick = userKey;
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        document.getElementById('display-nick').innerText = userKey.charAt(0).toUpperCase() + userKey.slice(1);
+        localStorage.setItem('userPenemu', id); localStorage.setItem('passPenemu', pass);
+        // loadData() logic here...
+    } else {
+        tampilPesan("ID/Password salah!");
+    }
 }
+document.getElementById('btn-login-action').onclick = () => prosesLogin(document.getElementById('login-id').value.toLowerCase(), document.getElementById('login-pass').value);
+document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
 
-// Global functions for HTML
-window.hapusPost = (id) => { idYangAkanDihapus = id; document.getElementById('confirm-modal').classList.remove('hidden'); };
-document.getElementById('btn-confirm-yes').onclick = async () => { if(idYangAkanDihapus) await remove(ref(db, `laporan_v2/${idYangAkanDihapus}`)); document.getElementById('confirm-modal').classList.add('hidden'); };
-document.getElementById('btn-confirm-no').onclick = () => document.getElementById('confirm-modal').classList.add('hidden');
-
-// Initialization
 window.onload = () => {
     setTheme(localStorage.getItem('themePenemu') || 'light');
     const u = localStorage.getItem('userPenemu'), p = localStorage.getItem('passPenemu');
-    if(u && p) prosesLogin(u, p, true);
+    if(u && p) prosesLogin(u, p);
 };
-
-// ... (Login logic & Tabs logic sama seperti versi sebelumnya)
