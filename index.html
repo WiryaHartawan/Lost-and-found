@@ -22,23 +22,19 @@
         .btn-main { background: #1877f2; color: white; }
         .btn-save { background: #42b72a; color: white; }
         .btn-cancel { background: #f02849; color: white; }
-        .btn-delete { background: #ff4d4d; color: white; font-size: 14px; margin-top: 10px; }
         .link-style { color: #1877f2; text-decoration: underline; cursor: pointer; font-size: 14px; text-align: center; display: block; margin-top: 15px; }
         .link-forgot { color: #888; font-size: 13px; text-align: center; display: block; margin-top: 5px; cursor: pointer; }
-        .theme-switch-wrapper { display: flex; align-items: center; background: var(--tab-bg); padding: 3px; border-radius: 20px; width: 100px; position: relative; cursor: pointer; }
-        .theme-text { flex: 1; text-align: center; font-size: 10px; font-weight: bold; z-index: 2; color: var(--text-sub); }
-        .theme-text.active { color: #1877f2; }
-        .theme-slider { position: absolute; width: 48px; height: 22px; background: var(--bg-container); border-radius: 18px; transition: 0.3s; z-index: 1; }
-        .slide-dark { transform: translateX(46px); }
+        
+        /* Dashboard Styles */
         .search-container { position: relative; margin-bottom: 10px; }
         #search-input { padding-left: 35px; border-radius: 20px; background: var(--search-bg); border: none; height: 45px; }
-        .search-icon { position: absolute; left: 12px; top: 13px; font-size: 14px; color: #888; }
         .filter-tab { display: flex; background: var(--tab-bg); border-radius: 10px; margin-bottom: 15px; padding: 5px; position: relative; }
         .tab-item { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; z-index: 2; color: var(--text-sub); }
         .tab-item.active { color: #1877f2; }
         .tab-bg { position: absolute; width: 50%; height: calc(100% - 10px); background: var(--bg-container); border-radius: 8px; transition: 0.3s; z-index: 1; }
         .slide-right { transform: translateX(100%); }
-        .card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 15px; margin-top: 15px; border-radius: 10px; }
+        
+        /* Modal Overlay */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .modal-box { background: var(--bg-container); padding: 25px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; }
     </style>
@@ -51,29 +47,22 @@
             <input type="password" id="login-pass" placeholder="Password">
             <button id="btn-login-action" class="btn-main">Login</button>
             <p id="btn-forgot-password" class="link-forgot">Lupa Password?</p>
-            <p class="link-style" onclick="document.getElementById('login-section').classList.add('hidden'); document.getElementById('register-section').classList.remove('hidden');">Daftar Akun Baru</p>
+            <p class="link-style" onclick="tampilPesan('Fitur Daftar Akun Baru segera hadir!')">Daftar Akun Baru</p>
         </div>
 
         <div id="main-app" class="hidden">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <div>Halo, <b id="display-nick">...</b></div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div class="theme-switch-wrapper" id="theme-toggle">
-                        <div id="text-light" class="theme-text active">Terang</div>
-                        <div id="text-dark" class="theme-text">Gelap</div>
-                        <div id="theme-slider" class="theme-slider"></div>
-                    </div>
-                    <button id="btn-logout" style="width:auto; padding:5px 10px; margin:0; background:var(--tab-bg); font-size: 11px; color: var(--text-main);">Logout</button>
-                </div>
+                <button id="btn-logout" style="width:auto; padding:5px 10px; background:#eee; color:#333;">Logout</button>
             </div>
             <div id="view-list">
-                <div class="search-container"><span class="search-icon">🔍</span><input type="text" id="search-input" placeholder="Cari nama barang..."></div>
+                <input type="text" id="search-input" placeholder="Cari nama barang...">
                 <div class="filter-tab">
                     <div id="tab-all" class="tab-item active">Semua Laporan</div>
                     <div id="tab-mine" class="tab-item">Laporan Saya</div>
                     <div id="tab-bg" class="tab-bg"></div>
                 </div>
-                <button id="btn-buka-form" class="btn-main">+ Lapor Barang</button>
+                <button class="btn-main">+ Lapor Barang</button>
                 <div id="item-list"></div>
             </div>
         </div>
@@ -88,8 +77,8 @@
                 <button id="btn-send-otp" class="btn-main">Kirim Kode OTP</button>
             </div>
             <div id="step-otp" class="hidden">
-                <p style="font-size: 13px;">Gunakan kode OTP dari email anda.</p>
-                <input type="number" id="otp-input" placeholder="6 Digit Kode">
+                <p style="font-size: 13px;">Masukkan OTP dan Password Baru.</p>
+                <input type="number" id="otp-input" placeholder="Kode OTP">
                 <input type="password" id="new-pass-input" placeholder="Password Baru">
                 <button id="btn-verify-reset" class="btn-save">Update Password</button>
             </div>
