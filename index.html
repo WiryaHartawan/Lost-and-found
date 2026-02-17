@@ -21,22 +21,26 @@
         .btn-main { background: #1877f2; color: white; }
         .btn-save { background: #42b72a; color: white; }
         .btn-cancel { background: #f02849; color: white; }
-        .btn-delete { background: #ff4d4d; color: white; padding: 10px; border-radius: 8px; font-size: 14px; margin-bottom: 10px; border: none; cursor: pointer; width: 100%; }
+        .btn-delete { background: #ff4d4d; color: white; padding: 10px; border-radius: 8px; font-size: 14px; margin-top: 10px; border: none; cursor: pointer; width: 100%; }
+        
+        /* Gaya Link & Navigasi */
+        .link-style { color: #1877f2; text-decoration: underline; cursor: pointer; font-size: 14px; text-align: center; display: block; margin-top: 15px; }
+        .wa-link { color: #0000EE; text-decoration: underline; font-weight: bold; }
+
+        /* Slider Filter */
+        .filter-tab { display: flex; background: #eee; border-radius: 10px; margin-bottom: 15px; padding: 5px; position: relative; }
+        .tab-item { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; z-index: 2; color: #555; transition: 0.3s; }
+        .tab-item.active { color: #1877f2; }
+        .tab-bg { position: absolute; width: 50%; height: calc(100% - 10px); background: white; border-radius: 8px; transition: 0.3s ease; z-index: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .slide-right { transform: translateX(100%); }
         
         .card { background: white; border: 1px solid #ddd; padding: 15px; margin-top: 15px; border-radius: 10px; }
         .card img { width: 100%; border-radius: 8px; margin-bottom: 10px; }
-        
-        /* Layout Info Baris */
         .info-row { display: flex; align-items: flex-start; margin: 8px 0; font-size: 14px; line-height: 1.4; }
         .info-row b { color: #333; min-width: 110px; display: inline-block; }
         
-        /* Gaya Link Nomor WhatsApp */
-        .wa-link { color: #0000EE; text-decoration: underline; font-weight: bold; }
-        .wa-link:active { color: #551A8B; }
-
         .pass-container { position: relative; width: 100%; }
         .toggle-pass { position: absolute; right: 10px; top: 18px; cursor: pointer; font-size: 11px; color: #1877f2; font-weight: bold; }
-        
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .modal-box { background: white; padding: 20px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; }
     </style>
@@ -51,17 +55,17 @@
                 <span class="toggle-pass" id="toggle-l">LIHAT</span>
             </div>
             <button id="btn-login-action" class="btn-main" style="margin-top: 15px;">Login</button>
-            <p onclick="document.getElementById('login-section').classList.add('hidden'); document.getElementById('register-section').classList.remove('hidden');" style="color:#1877f2; cursor:pointer; text-align:center; font-size:14px; text-decoration:underline;">Daftar Akun Baru</p>
+            <p class="link-style" onclick="document.getElementById('login-section').classList.add('hidden'); document.getElementById('register-section').classList.remove('hidden');">Daftar Akun Baru</p>
         </div>
 
         <div id="register-section" class="hidden">
             <h2 style="text-align: center;">Daftar Akun</h2>
             <input type="text" id="reg-nick" placeholder="Nickname">
             <input type="email" id="reg-email" placeholder="Alamat Gmail">
-            <input type="number" id="reg-wa" placeholder="Nomor WhatsApp (Contoh: 0812...)">
+            <input type="number" id="reg-wa" placeholder="Nomor WhatsApp">
             <input type="password" id="reg-pass" placeholder="Password">
             <button id="btn-register-action" class="btn-save">Daftar</button>
-            <p onclick="location.reload()" style="text-align:center; cursor:pointer; font-size:14px;">Kembali ke Login</p>
+            <p class="link-style" onclick="location.reload()">Kembali ke Login</p>
         </div>
 
         <div id="main-app" class="hidden">
@@ -71,6 +75,12 @@
             </div>
             
             <div id="view-list">
+                <div class="filter-tab">
+                    <div id="tab-all" class="tab-item active">Semua Laporan</div>
+                    <div id="tab-mine" class="tab-item">Laporan Saya</div>
+                    <div id="tab-bg" class="tab-bg"></div>
+                </div>
+
                 <button id="btn-buka-form" class="btn-main">+ Lapor Barang</button>
                 <div id="item-list"></div>
             </div>
@@ -80,7 +90,6 @@
                 <input type="text" id="nama-barang" placeholder="Nama Barang">
                 <input type="text" id="lokasi-barang" placeholder="Lokasi Ketemu">
                 <textarea id="deskripsi-barang" rows="3" placeholder="Deskripsi (Ciri-ciri barang)"></textarea>
-                <label style="font-size: 12px; color: gray;">Foto Barang:</label>
                 <input type="file" id="foto-barang" accept="image/*">
                 <button id="btn-posting" class="btn-save">Posting Sekarang</button>
                 <button id="btn-batal" class="btn-cancel">Batal</button>
