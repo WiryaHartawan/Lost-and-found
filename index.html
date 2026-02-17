@@ -9,30 +9,34 @@
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 450px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .hidden { display: none !important; }
-        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: inherit; }
         
-        /* Animasi Tombol saat di-klik */
+        /* Animasi Tombol */
         button { 
             width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; 
-            font-weight: bold; margin-bottom: 10px; transition: transform 0.1s, opacity 0.1s;
+            font-weight: bold; margin-bottom: 10px; transition: transform 0.1s, opacity 0.1s; 
         }
         button:active { transform: scale(0.96); opacity: 0.8; }
         
         .btn-main { background: #1877f2; color: white; }
         .btn-save { background: #42b72a; color: white; }
         .btn-cancel { background: #f02849; color: white; }
-        .btn-delete { background: #ff4d4d; color: white; padding: 10px; border-radius: 8px; font-size: 14px; margin-bottom: 15px; border: none; cursor: pointer; }
+        .btn-delete { background: #ff4d4d; color: white; padding: 10px; border-radius: 8px; font-size: 14px; margin-bottom: 10px; border: none; cursor: pointer; width: 100%; }
         
         .card { background: white; border: 1px solid #ddd; padding: 15px; margin-top: 15px; border-radius: 10px; }
         .card img { width: 100%; border-radius: 8px; margin-bottom: 10px; }
         
         /* Layout Info Baris */
-        .info-row { display: flex; align-items: flex-start; margin: 8px 0; font-size: 14px; }
+        .info-row { display: flex; align-items: flex-start; margin: 8px 0; font-size: 14px; line-height: 1.4; }
         .info-row b { color: #333; min-width: 110px; display: inline-block; }
-        .wa-link { color: #25D366; text-decoration: none; font-weight: bold; }
         
+        /* Gaya Link Nomor WhatsApp */
+        .wa-link { color: #0000EE; text-decoration: underline; font-weight: bold; }
+        .wa-link:active { color: #551A8B; }
+
         .pass-container { position: relative; width: 100%; }
         .toggle-pass { position: absolute; right: 10px; top: 18px; cursor: pointer; font-size: 11px; color: #1877f2; font-weight: bold; }
+        
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .modal-box { background: white; padding: 20px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; }
     </style>
@@ -47,23 +51,23 @@
                 <span class="toggle-pass" id="toggle-l">LIHAT</span>
             </div>
             <button id="btn-login-action" class="btn-main" style="margin-top: 15px;">Login</button>
-            <p onclick="document.getElementById('login-section').classList.add('hidden'); document.getElementById('register-section').classList.remove('hidden');" style="color:#1877f2; cursor:pointer; text-align:center; font-size:14px;">Daftar Akun Baru</p>
+            <p onclick="document.getElementById('login-section').classList.add('hidden'); document.getElementById('register-section').classList.remove('hidden');" style="color:#1877f2; cursor:pointer; text-align:center; font-size:14px; text-decoration:underline;">Daftar Akun Baru</p>
         </div>
 
         <div id="register-section" class="hidden">
             <h2 style="text-align: center;">Daftar Akun</h2>
             <input type="text" id="reg-nick" placeholder="Nickname">
-            <input type="email" id="reg-email" placeholder="Gmail">
+            <input type="email" id="reg-email" placeholder="Alamat Gmail">
             <input type="number" id="reg-wa" placeholder="Nomor WhatsApp (Contoh: 0812...)">
             <input type="password" id="reg-pass" placeholder="Password">
             <button id="btn-register-action" class="btn-save">Daftar</button>
-            <p onclick="location.reload()" style="text-align:center; cursor:pointer; font-size:14px;">Kembali</p>
+            <p onclick="location.reload()" style="text-align:center; cursor:pointer; font-size:14px;">Kembali ke Login</p>
         </div>
 
         <div id="main-app" class="hidden">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
                 <div>Halo, <b id="display-nick">...</b></div>
-                <button id="btn-logout" style="width:auto; padding:5px 12px; margin:0; background:#eee;">Logout</button>
+                <button id="btn-logout" style="width:auto; padding:5px 12px; margin:0; background:#eee; font-size: 12px;">Logout</button>
             </div>
             
             <div id="view-list">
@@ -72,10 +76,11 @@
             </div>
 
             <div id="view-form" class="hidden">
-                <h3>Detail Laporan</h3>
+                <h3>Detail Laporan Baru</h3>
                 <input type="text" id="nama-barang" placeholder="Nama Barang">
                 <input type="text" id="lokasi-barang" placeholder="Lokasi Ketemu">
-                <textarea id="deskripsi-barang" rows="3" placeholder="Deskripsi Barang"></textarea>
+                <textarea id="deskripsi-barang" rows="3" placeholder="Deskripsi (Ciri-ciri barang)"></textarea>
+                <label style="font-size: 12px; color: gray;">Foto Barang:</label>
                 <input type="file" id="foto-barang" accept="image/*">
                 <button id="btn-posting" class="btn-save">Posting Sekarang</button>
                 <button id="btn-batal" class="btn-cancel">Batal</button>
