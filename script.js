@@ -24,23 +24,20 @@ let currentFilter = "all";
 let generatedOTP = "";
 let targetUserNick = "";
 
-// --- UTILS ---
 const tampilPesan = (msg) => {
     document.getElementById('modal-msg').innerText = msg;
     document.getElementById('custom-alert').classList.remove('hidden');
 };
 
-// --- AUTH LOGIC ---
+// --- AUTH ---
 document.getElementById('btn-login-action').onclick = async () => {
     const inputID = document.getElementById('login-id').value.trim().toLowerCase();
     const pass = document.getElementById('login-pass').value;
-    
     const usersSnap = await get(ref(db, 'users'));
     let loggedIn = false;
 
     usersSnap.forEach((child) => {
         const userData = child.val();
-        // Cek Nickname ATAU Gmail
         if ((child.key === inputID || userData.email.toLowerCase() === inputID) && userData.password === pass) {
             currentNick = child.key;
             loggedIn = true;
@@ -65,52 +62,12 @@ document.getElementById('btn-register-action').onclick = async () => {
     const conf = document.getElementById('reg-confirm').value;
 
     if (!nick || !email || !wa || !pass || pass !== conf) return tampilPesan("Data tidak lengkap!");
-    
     const snap = await get(ref(db, 'users/' + nick));
     if (snap.exists()) return tampilPesan("Nickname sudah digunakan!");
 
     await set(ref(db, 'users/' + nick), { password: pass, email: email, whatsapp: wa });
-    tampilPesan("Berhasil Daftar! Silakan Login.");
+    tampilPesan("Berhasil Daftar!");
     location.reload();
-};
-
-// --- OTP LOGIC ---
-document.getElementById('btn-send-otp').onclick = async () => {
-    const emailTarget = document.getElementById('forgot-email-input').value.trim();
-    const btn = document.getElementById('btn-send-otp');
-    const usersSnap = await get(ref(db, 'users'));
-    let found = false;
-
-    usersSnap.forEach((child) => {
-        if (child.val().email === emailTarget) {
-            found = true;
-            targetUserNick = child.key;
-        }
-    });
-
-    if (found) {
-        btn.disabled = true; btn.innerText = "Mengirim...";
-        generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-        emailjs.send(SERVICE_ID, TEMPLATE_ID, { email: emailTarget, passcode: generatedOTP })
-        .then(() => {
-            tampilPesan("OTP terkirim!");
-            document.getElementById('forgot-step-1').classList.add('hidden');
-            document.getElementById('forgot-step-2').classList.remove('hidden');
-        }, () => {
-            tampilPesan("Gagal kirim email.");
-            btn.disabled = false;
-        });
-    } else tampilPesan("Email tidak terdaftar!");
-};
-
-document.getElementById('btn-reset-pass').onclick = async () => {
-    const otp = document.getElementById('input-otp').value;
-    const nPass = document.getElementById('new-pass').value;
-    if (otp === generatedOTP && nPass.length >= 6) {
-        await set(ref(db, `users/${targetUserNick}/password`), nPass);
-        tampilPesan("Password diubah!");
-        location.reload();
-    } else tampilPesan("OTP salah!");
 };
 
 // --- DATA LIST ---
@@ -138,6 +95,7 @@ function loadData() {
                     ${v.img ? `<img src="${v.img}">` : ""}
                     <div class="info-row">📦 <b>Nama Barang:</b> ${v.item}</div>
                     <div class="info-row">📍 <b>Lokasi:</b> ${v.loc}</div>
+                    <div class="info-row">📝 <b>Deskripsi:</b> ${v.desc || '-'}</div>
                     <div class="info-row">👤 <b>Pelapor:</b> ${v.user}</div>
                     ${wa && !isMine ? `
                         <a href="https://wa.me/${wa.replace(/^0/, '62')}" target="_blank" class="btn-wa">
@@ -151,10 +109,15 @@ function loadData() {
 
 window.hapusPostingan = (id) => { if(confirm("Hapus laporan?")) remove(ref(db, 'laporan_v2/' + id)); };
 
-// --- POSTING ---
+// --- POSTING (DENGAN RESET FORM) ---
 document.getElementById('btn-posting').onclick = async () => {
-    const n = document.getElementById('nama-barang'), l = document.getElementById('lokasi-barang'), f = document.getElementById('foto-barang');
-    if (!n.value || !l.value) return tampilPesan("Isi data!");
+    const n = document.getElementById('nama-barang'), 
+          l = document.getElementById('lokasi-barang'), 
+          d = document.getElementById('deskripsi-barang'),
+          f = document.getElementById('foto-barang');
+
+    if (!n.value || !l.value) return tampilPesan("Isi Nama & Lokasi!");
+    
     let b64 = "";
     if (f.files[0]) {
         const reader = new FileReader();
@@ -163,18 +126,75 @@ document.getElementById('btn-posting').onclick = async () => {
             reader.readAsDataURL(f.files[0]);
         });
     }
-    await push(ref(db, 'laporan_v2'), { item: n.value, loc: l.value, img: b64, user: currentNick });
+
+    await push(ref(db, 'laporan_v2'), { 
+        item: n.value, 
+        loc: l.value, 
+        desc: d.value, 
+        img: b64, 
+        user: currentNick 
+    });
+
     tampilPesan("Terposting!");
+    
+    // RESET FORM SETELAH BERHASIL
+    n.value = ""; l.value = ""; d.value = ""; f.value = "";
+    
     document.getElementById('view-form').classList.add('hidden');
     document.getElementById('view-list').classList.remove('hidden');
 };
 
-// --- UI EVENTS ---
+// --- UI EVENTS & RESET TRIGGER ---
+document.getElementById('btn-buka-form').onclick = () => {
+    // Reset form sebelum dibuka untuk memastikan bersih
+    document.getElementById('nama-barang').value = "";
+    document.getElementById('lokasi-barang').value = "";
+    document.getElementById('deskripsi-barang').value = "";
+    document.getElementById('foto-barang').value = "";
+    
+    document.getElementById('view-list').classList.add('hidden');
+    document.getElementById('view-form').classList.remove('hidden');
+};
+
+document.getElementById('btn-batal').onclick = () => {
+    document.getElementById('view-form').classList.add('hidden');
+    document.getElementById('view-list').classList.remove('hidden');
+};
+
+// Lupa Password OTP (Logic tetap sama dari sebelumnya)
+document.getElementById('btn-send-otp').onclick = async () => {
+    const emailTarget = document.getElementById('forgot-email-input').value.trim();
+    const btn = document.getElementById('btn-send-otp');
+    const usersSnap = await get(ref(db, 'users'));
+    let found = false;
+    usersSnap.forEach((child) => { if (child.val().email === emailTarget) { found = true; targetUserNick = child.key; } });
+
+    if (found) {
+        btn.disabled = true; btn.innerText = "Mengirim...";
+        generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+        emailjs.send(SERVICE_ID, TEMPLATE_ID, { email: emailTarget, passcode: generatedOTP })
+        .then(() => {
+            tampilPesan("OTP terkirim!");
+            document.getElementById('forgot-step-1').classList.add('hidden');
+            document.getElementById('forgot-step-2').classList.remove('hidden');
+        }, () => { btn.disabled = false; btn.innerText = "Kirim OTP"; });
+    } else tampilPesan("Email tidak ditemukan!");
+};
+
+document.getElementById('btn-reset-pass').onclick = async () => {
+    const otp = document.getElementById('input-otp').value;
+    const nPass = document.getElementById('new-pass').value;
+    if (otp === generatedOTP && nPass.length >= 6) {
+        await set(ref(db, `users/${targetUserNick}/password`), nPass);
+        tampilPesan("Password berhasil diubah!");
+        location.reload();
+    } else tampilPesan("OTP salah!");
+};
+
+// UI Tabs & Navigation
 document.getElementById('go-to-reg').onclick = () => { document.getElementById('login-section').classList.add('hidden'); document.getElementById('register-section').classList.remove('hidden'); };
 document.getElementById('go-to-login').onclick = () => { document.getElementById('register-section').classList.add('hidden'); document.getElementById('login-section').classList.remove('hidden'); };
 document.getElementById('go-to-forgot').onclick = () => { document.getElementById('login-section').classList.add('hidden'); document.getElementById('forgot-section').classList.remove('hidden'); };
-document.getElementById('btn-buka-form').onclick = () => { document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-form').classList.remove('hidden'); };
-document.getElementById('btn-batal').onclick = () => { document.getElementById('view-form').classList.add('hidden'); document.getElementById('view-list').classList.remove('hidden'); };
 document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
 
 document.getElementById('tab-all').onclick = () => {
@@ -192,7 +212,7 @@ document.getElementById('tab-mine').onclick = () => {
     loadData();
 };
 
-// Password Toggle
+// Password View Toggle
 ['toggle-l', 'toggle-r1', 'toggle-r2'].forEach((id, i) => {
     document.getElementById(id).onclick = () => {
         const inp = [document.getElementById('login-pass'), document.getElementById('reg-pass'), document.getElementById('reg-confirm')][i];
