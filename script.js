@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, get, set, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBw9bZb08ux2Ft2ywM4Kygo3-FYEfWD-6I",
@@ -13,11 +13,13 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-emailjs.init("dAs5GtBjjvQR-Ak1C"); // Public Key Anda
 
-let currentNick = "", currentFilter = "all", searchQuery = "", generatedOTP = "";
+// INISIALISASI EMAILJS
+emailjs.init("dAs5GtBjjvQR-Ak1C"); 
 
-const tampilPesan = (msg) => {
+let generatedOTP = "";
+
+window.tampilPesan = (msg) => {
     document.getElementById('modal-msg').innerText = msg;
     document.getElementById('custom-alert').classList.remove('hidden');
 };
@@ -33,23 +35,25 @@ document.getElementById('btn-send-otp').onclick = async () => {
     const email = document.getElementById('reset-email-input').value.trim();
     if (!email) return tampilPesan("Masukkan email!");
 
+    // Cek apakah email terdaftar di Firebase
     const usersSnap = await get(ref(db, 'users'));
-    let found = false;
-    usersSnap.forEach(c => { if(c.val().email.toLowerCase() === email.toLowerCase()) found = true; });
+    let userFound = false;
+    usersSnap.forEach(c => { if(c.val().email.toLowerCase() === email.toLowerCase()) userFound = true; });
 
-    if (!found) return tampilPesan("Email tidak terdaftar!");
+    if (!userFound) return tampilPesan("Email tidak terdaftar di sistem Penemu!");
 
+    // Generate OTP & Kirim
     generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
     const btn = document.getElementById('btn-send-otp');
     btn.innerText = "Mengirim..."; btn.disabled = true;
 
-    // GANTI "service_id" di bawah ini dengan Service ID EmailJS Anda
-    emailjs.send("service_9p57qre", "template_laaee1i", {
-        email: email,
-        passcode: generatedOTP,
-        time: new Date().toLocaleTimeString()
+    // Menggunakan Service ID: penemu & Template ID: template_laaee1i
+    emailjs.send("penemu", "template_laaee1i", {
+        email: email,             // Untuk {{email}}
+        passcode: generatedOTP,    // Untuk {{passcode}}
+        time: new Date().toLocaleTimeString() // Untuk {{time}}
     }).then(() => {
-        tampilPesan("OTP terkirim ke email!");
+        tampilPesan("Kode OTP telah dikirim ke email!");
         document.getElementById('step-email').classList.add('hidden');
         document.getElementById('step-otp').classList.remove('hidden');
     }).catch(err => {
@@ -65,51 +69,35 @@ document.getElementById('btn-verify-reset').onclick = async () => {
     const newPass = document.getElementById('new-pass-input').value;
     const email = document.getElementById('reset-email-input').value;
 
-    if (inputOTP !== generatedOTP) return tampilPesan("OTP Salah!");
-    if (newPass.length < 6) return tampilPesan("Password min 6 karakter!");
+    if (inputOTP !== generatedOTP) return tampilPesan("Kode OTP Salah!");
+    if (newPass.length < 6) return tampilPesan("Password baru minimal 6 karakter!");
 
     const s = await get(ref(db, 'users'));
     s.forEach(async (c) => {
         if(c.val().email.toLowerCase() === email.toLowerCase()) {
             await set(ref(db, `users/${c.key}/password`), newPass);
-            tampilPesan("Password diperbarui! Silahkan login.");
+            tampilPesan("Sukses! Silahkan login dengan password baru.");
             document.getElementById('reset-modal').classList.add('hidden');
         }
     });
 };
 
-// --- LOGIKA TEMA ---
-const setTheme = (theme) => {
-    document.body.setAttribute('data-theme', theme);
-    localStorage.setItem('themePenemu', theme);
-    const isDark = theme === 'dark';
-    document.getElementById('theme-slider').classList.toggle('slide-dark', isDark);
-    document.getElementById('text-light').classList.toggle('active', !isDark);
-    document.getElementById('text-dark').classList.toggle('active', isDark);
-};
-document.getElementById('theme-toggle').onclick = () => setTheme(document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-
-// --- LOGIN & CORE ---
-async function prosesLogin(id, pass) {
+// --- LOGIN DASAR ---
+document.getElementById('btn-login-action').onclick = async () => {
+    const id = document.getElementById('login-id').value.toLowerCase();
+    const pass = document.getElementById('login-pass').value;
+    
     const s = await get(ref(db, 'users'));
-    let userKey = null;
-    s.forEach(c => { if((c.key === id || c.val().email.toLowerCase() === id) && c.val().password === pass) userKey = c.key; });
-    if(userKey) {
-        currentNick = userKey;
+    let valid = false;
+    s.forEach(c => { if((c.key === id || c.val().email.toLowerCase() === id) && c.val().password === pass) valid = c.key; });
+
+    if(valid) {
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
-        document.getElementById('display-nick').innerText = userKey.charAt(0).toUpperCase() + userKey.slice(1);
-        localStorage.setItem('userPenemu', id); localStorage.setItem('passPenemu', pass);
-        // loadData() logic here...
+        document.getElementById('display-nick').innerText = valid;
     } else {
-        tampilPesan("ID/Password salah!");
+        tampilPesan("ID atau Password salah!");
     }
-}
-document.getElementById('btn-login-action').onclick = () => prosesLogin(document.getElementById('login-id').value.toLowerCase(), document.getElementById('login-pass').value);
-document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
-
-window.onload = () => {
-    setTheme(localStorage.getItem('themePenemu') || 'light');
-    const u = localStorage.getItem('userPenemu'), p = localStorage.getItem('passPenemu');
-    if(u && p) prosesLogin(u, p);
 };
+
+document.getElementById('btn-logout').onclick = () => location.reload();
