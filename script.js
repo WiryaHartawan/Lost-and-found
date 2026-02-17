@@ -17,12 +17,40 @@ emailjs.init("dAs5GtBjjvQR-Ak1C");
 
 let currentNick = "", generatedOTP = "", allData = {};
 
-window.tampilPesan = (msg) => {
+// --- FUNGSI RESET FORM ---
+function resetForm() {
+    document.getElementById('nama-barang').value = "";
+    document.getElementById('lokasi-barang').value = "";
+    document.getElementById('deskripsi-barang').value = "";
+    document.getElementById('nomor-wa').value = "";
+    document.getElementById('foto-barang').value = "";
+}
+
+// --- TAMPIL PESAN DENGAN KONFIRMASI KUSTOM ---
+window.tampilPesan = (msg, isConfirm = false, onConfirm = null) => {
     document.getElementById('modal-msg').innerText = msg;
-    document.getElementById('custom-alert').classList.remove('hidden');
+    const okBtn = document.getElementById('alert-ok');
+    const cancelBtn = document.getElementById('alert-cancel');
+    const modal = document.getElementById('custom-alert');
+
+    modal.classList.remove('hidden');
+
+    if (isConfirm) {
+        okBtn.innerText = "Ya, Hapus";
+        cancelBtn.classList.remove('hidden');
+        okBtn.onclick = () => {
+            if (onConfirm) onConfirm();
+            modal.classList.add('hidden');
+        };
+        cancelBtn.onclick = () => modal.classList.add('hidden');
+    } else {
+        okBtn.innerText = "OK";
+        cancelBtn.classList.add('hidden');
+        okBtn.onclick = () => modal.classList.add('hidden');
+    }
 };
 
-// --- FITUR PENCARIAN REAL-TIME ---
+// --- PENCARIAN REAL-TIME ---
 document.getElementById('search-input').oninput = (e) => {
     renderData(e.target.value.toLowerCase());
 };
@@ -34,6 +62,7 @@ function loadData() {
     });
 }
 
+// --- RENDER DATA DENGAN KAPITALISASI & LINK BIRU ---
 function renderData(filter = "") {
     const container = document.getElementById('item-list');
     container.innerHTML = "";
@@ -41,27 +70,43 @@ function renderData(filter = "") {
         const v = allData[id];
         if (v.item.toLowerCase().includes(filter)) {
             const isOwner = v.user === currentNick;
+            // Kapitalisasi Nama Pelapor
+            const namaKapital = v.user.charAt(0).toUpperCase() + v.user.slice(1);
+            // Format Link WA
+            const formatWA = v.phone.startsWith('0') ? '62' + v.phone.slice(1) : v.phone;
+
             container.innerHTML += `
                 <div class="card">
                     ${v.img ? `<img src="${v.img}">` : ""}
                     <p><b>📦 Barang:</b> ${v.item}</p>
                     <p><b>📍 Lokasi:</b> ${v.loc}</p>
-                    <p><b>👤 Pelapor:</b> ${v.user}</p>
-                    ${v.phone ? `<p><b>📱 Nomor:</b> <a class="wa-link" href="https://wa.me/${v.phone}" target="_blank">${v.phone} (Chat)</a></p>` : ""}
+                    <p><b>👤 Pelapor:</b> ${namaKapital}</p>
+                    ${v.phone ? `<p><b>📱 Nomor:</b> <a class="wa-link" href="https://wa.me/${formatWA}" target="_blank">${v.phone}</a></p>` : ""}
                     ${isOwner ? `<button class="btn-del" onclick="hapusLaporan('${id}')">Hapus Laporan</button>` : ""}
                 </div>`;
         }
     });
 }
 
-window.hapusLaporan = async (id) => {
-    if (confirm("Hapus laporan ini?")) {
+window.hapusLaporan = (id) => {
+    tampilPesan("Hapus laporan ini?", true, async () => {
         await remove(ref(db, `laporan_v2/${id}`));
         tampilPesan("Laporan dihapus.");
-    }
+    });
 };
 
-// --- FITUR POSTING ---
+// --- LOGIKA FORM LAPORAN ---
+document.getElementById('btn-buka-form').onclick = () => {
+    resetForm(); // Bersihkan form saat dibuka
+    document.getElementById('view-list').classList.add('hidden');
+    document.getElementById('view-form').classList.remove('hidden');
+};
+
+document.getElementById('btn-batal').onclick = () => {
+    document.getElementById('view-form').classList.add('hidden');
+    document.getElementById('view-list').classList.remove('hidden');
+};
+
 document.getElementById('btn-posting').onclick = async () => {
     const item = document.getElementById('nama-barang').value;
     const loc = document.getElementById('lokasi-barang').value;
@@ -90,12 +135,13 @@ async function simpanLaporan(item, loc, desc, phone, img) {
         user: currentNick,
         time: Date.now()
     });
+    resetForm(); // Bersihkan form setelah posting
     document.getElementById('view-form').classList.add('hidden');
     document.getElementById('view-list').classList.remove('hidden');
     tampilPesan("Berhasil diposting!");
 }
 
-// --- LOGIKA LOGIN & RESET (Sesuai perbaikan sebelumnya) ---
+// --- LOGIKA LOGIN & LOGOUT ---
 async function prosesLogin(id, pass, isAuto = false) {
     const s = await get(ref(db, 'users'));
     let userKey = null;
@@ -107,7 +153,7 @@ async function prosesLogin(id, pass, isAuto = false) {
         currentNick = userKey;
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
-        document.getElementById('display-nick').innerText = userKey;
+        document.getElementById('display-nick').innerText = userKey.charAt(0).toUpperCase() + userKey.slice(1);
         localStorage.setItem('userPenemu', userKey); 
         localStorage.setItem('passPenemu', pass);
         loadData();
@@ -121,21 +167,12 @@ document.getElementById('btn-login-action').onclick = () => {
     prosesLogin(document.getElementById('login-id').value.toLowerCase(), document.getElementById('login-pass').value);
 };
 
-document.getElementById('btn-buka-form').onclick = () => {
-    document.getElementById('view-list').classList.add('hidden');
-    document.getElementById('view-form').classList.remove('hidden');
-};
-
-document.getElementById('btn-batal').onclick = () => {
-    document.getElementById('view-form').classList.add('hidden');
-    document.getElementById('view-list').classList.remove('hidden');
-};
-
 document.getElementById('btn-logout').onclick = () => {
     localStorage.clear();
     location.reload();
 };
 
+// --- LOGIKA RESET PASSWORD (OTP) ---
 document.getElementById('btn-forgot-password').onclick = () => {
     document.getElementById('reset-modal').classList.remove('hidden');
 };
