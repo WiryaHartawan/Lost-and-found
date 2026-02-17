@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+import { getDatabase, ref, get, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBw9bZb08ux2Ft2ywM4Kygo3-FYEfWD-6I",
@@ -15,7 +15,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 emailjs.init("dAs5GtBjjvQR-Ak1C");
 
-let generatedOTP = "";
+let currentNick = "", generatedOTP = "";
 
 window.tampilPesan = (msg) => {
     document.getElementById('modal-msg').innerText = msg;
@@ -32,6 +32,61 @@ document.getElementById('btn-batal').onclick = () => {
     document.getElementById('view-list').classList.remove('hidden');
 };
 
+function loadData() {
+    onValue(ref(db, 'laporan_v2'), (s) => {
+        const container = document.getElementById('item-list');
+        container.innerHTML = "";
+        const data = s.val();
+        if (!data) return;
+        Object.keys(data).reverse().forEach(id => {
+            const v = data[id];
+            container.innerHTML += `
+                <div class="card">
+                    ${v.img ? `<img src="${v.img}">` : ""}
+                    <p><b>📦 Barang:</b> ${v.item}</p>
+                    <p><b>📍 Lokasi:</b> ${v.loc}</p>
+                    <p><b>👤 Pelapor:</b> ${v.user}</p>
+                </div>`;
+        });
+    });
+}
+
+document.getElementById('btn-posting').onclick = async () => {
+    const item = document.getElementById('nama-barang').value;
+    const loc = document.getElementById('lokasi-barang').value;
+    const desc = document.getElementById('deskripsi-barang').value;
+    const file = document.getElementById('foto-barang').files[0];
+
+    if (!item || !loc) return tampilPesan("Nama dan Lokasi wajib diisi!");
+
+    let imgBase64 = "";
+    if (file) {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+            imgBase64 = reader.result;
+            await simpanLaporan(item, loc, desc, imgBase64);
+        };
+    } else {
+        await simpanLaporan(item, loc, desc, "");
+    }
+};
+
+async function simpanLaporan(item, loc, desc, img) {
+    const newRef = push(ref(db, 'laporan_v2'));
+    await set(newRef, {
+        item: item,
+        loc: loc,
+        desc: desc,
+        img: img,
+        user: currentNick,
+        time: Date.now()
+    });
+    document.getElementById('view-form').classList.add('hidden');
+    document.getElementById('view-list').classList.remove('hidden');
+    tampilPesan("Berhasil diposting!");
+}
+
 async function prosesLogin(id, pass, isAuto = false) {
     const s = await get(ref(db, 'users'));
     let userKey = null;
@@ -42,16 +97,27 @@ async function prosesLogin(id, pass, isAuto = false) {
     });
 
     if(userKey) {
+        currentNick = userKey;
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
-        document.getElementById('display-nick').innerText = userKey.charAt(0).toUpperCase() + userKey.slice(1);
+        document.getElementById('display-nick').innerText = userKey;
         localStorage.setItem('userPenemu', userKey); 
         localStorage.setItem('passPenemu', pass);
+        loadData();
     } else {
         if(!isAuto) tampilPesan("ID atau Password salah!");
         localStorage.clear();
     }
 }
+
+document.getElementById('btn-login-action').onclick = () => {
+    prosesLogin(document.getElementById('login-id').value.toLowerCase(), document.getElementById('login-pass').value);
+};
+
+document.getElementById('btn-logout').onclick = () => {
+    localStorage.clear();
+    location.reload();
+};
 
 document.getElementById('btn-forgot-password').onclick = () => {
     document.getElementById('reset-modal').classList.remove('hidden');
@@ -61,14 +127,11 @@ document.getElementById('btn-forgot-password').onclick = () => {
 
 document.getElementById('btn-send-otp').onclick = async () => {
     const email = document.getElementById('reset-email-input').value.trim();
-    if (!email) return tampilPesan("Masukkan email!");
     const usersSnap = await get(ref(db, 'users'));
     let found = false;
     usersSnap.forEach(c => { if(c.val().email.toLowerCase() === email.toLowerCase()) found = true; });
     if (!found) return tampilPesan("Email tidak terdaftar!");
     generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-    const btn = document.getElementById('btn-send-otp');
-    btn.innerText = "Mengirim..."; btn.disabled = true;
     emailjs.send("penemu", "template_laaee1i", {
         email: email,
         passcode: generatedOTP,
@@ -77,10 +140,6 @@ document.getElementById('btn-send-otp').onclick = async () => {
         tampilPesan("OTP terkirim!");
         document.getElementById('step-email').classList.add('hidden');
         document.getElementById('step-otp').classList.remove('hidden');
-    }).catch(() => {
-        tampilPesan("Gagal kirim OTP!");
-    }).finally(() => {
-        btn.innerText = "Kirim Kode OTP"; btn.disabled = false;
     });
 };
 
@@ -89,7 +148,6 @@ document.getElementById('btn-verify-reset').onclick = async () => {
     const newPass = document.getElementById('new-pass-input').value;
     const email = document.getElementById('reset-email-input').value;
     if (inputOTP !== generatedOTP) return tampilPesan("OTP Salah!");
-    if (newPass.length < 6) return tampilPesan("Min 6 Karakter!");
     const s = await get(ref(db, 'users'));
     let targetKey = null;
     s.forEach(c => { if(c.val().email.toLowerCase() === email.toLowerCase()) targetKey = c.key; });
@@ -100,15 +158,6 @@ document.getElementById('btn-verify-reset').onclick = async () => {
         document.getElementById('reset-modal').classList.add('hidden');
         prosesLogin(targetKey, newPass);
     }
-};
-
-document.getElementById('btn-login-action').onclick = () => {
-    prosesLogin(document.getElementById('login-id').value.toLowerCase(), document.getElementById('login-pass').value);
-};
-
-document.getElementById('btn-logout').onclick = () => {
-    localStorage.clear();
-    location.reload();
 };
 
 window.onload = () => {
