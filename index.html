@@ -7,66 +7,38 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         :root {
-            --bg-body: #f0f2f5;
-            --bg-container: white;
-            --text-main: #333;
-            --text-sub: #555;
-            --border-color: #ddd;
-            --input-bg: white;
-            --card-bg: white;
-            --tab-bg: #eee;
-            --search-bg: #f0f2f5;
+            --bg-body: #f0f2f5; --bg-container: white; --text-main: #333; --text-sub: #555;
+            --border-color: #ddd; --input-bg: white; --card-bg: white; --tab-bg: #eee; --search-bg: #f0f2f5;
         }
-
         [data-theme="dark"] {
-            --bg-body: #18191a;
-            --bg-container: #242526;
-            --text-main: #e4e6eb;
-            --text-sub: #b0b3b8;
-            --border-color: #3e4042;
-            --input-bg: #3a3b3c;
-            --card-bg: #242526;
-            --tab-bg: #3a3b3c;
-            --search-bg: #3a3b3c;
+            --bg-body: #18191a; --bg-container: #242526; --text-main: #e4e6eb; --text-sub: #b0b3b8;
+            --border-color: #3e4042; --input-bg: #3a3b3c; --card-bg: #242526; --tab-bg: #3a3b3c; --search-bg: #3a3b3c;
         }
-
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-body); color: var(--text-main); margin: 0; padding: 20px; display: flex; justify-content: center; transition: 0.3s; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-body); color: var(--text-main); margin: 0; padding: 20px; display: flex; justify-content: center; transition: 0.3s; }
         .container { width: 100%; max-width: 450px; background: var(--bg-container); padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .hidden { display: none !important; }
-        
-        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-family: inherit; background: var(--input-bg); color: var(--text-main); }
-        
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; background: var(--input-bg); color: var(--text-main); }
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; transition: 0.2s; }
         .btn-main { background: #1877f2; color: white; }
         .btn-save { background: #42b72a; color: white; }
         .btn-cancel { background: #f02849; color: white; }
-        .btn-delete { background: #ff4d4d; color: white; padding: 10px; border-radius: 8px; font-size: 14px; margin-top: 10px; }
-
+        .btn-delete { background: #ff4d4d; color: white; font-size: 14px; margin-top: 10px; }
         .link-style { color: #1877f2; text-decoration: underline; cursor: pointer; font-size: 14px; text-align: center; display: block; margin-top: 15px; }
         .link-forgot { color: #888; font-size: 13px; text-align: center; display: block; margin-top: 5px; cursor: pointer; }
-        .wa-link { color: #0084ff; text-decoration: underline; font-weight: bold; }
-
-        /* Slider Mode */
         .theme-switch-wrapper { display: flex; align-items: center; background: var(--tab-bg); padding: 3px; border-radius: 20px; width: 100px; position: relative; cursor: pointer; }
         .theme-text { flex: 1; text-align: center; font-size: 10px; font-weight: bold; z-index: 2; color: var(--text-sub); }
         .theme-text.active { color: #1877f2; }
         .theme-slider { position: absolute; width: 48px; height: 22px; background: var(--bg-container); border-radius: 18px; transition: 0.3s; z-index: 1; }
         .slide-dark { transform: translateX(46px); }
-
-        /* Search & Tabs */
         .search-container { position: relative; margin-bottom: 10px; }
         #search-input { padding-left: 35px; border-radius: 20px; background: var(--search-bg); border: none; height: 45px; }
         .search-icon { position: absolute; left: 12px; top: 13px; font-size: 14px; color: #888; }
-
         .filter-tab { display: flex; background: var(--tab-bg); border-radius: 10px; margin-bottom: 15px; padding: 5px; position: relative; }
         .tab-item { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; z-index: 2; color: var(--text-sub); }
         .tab-item.active { color: #1877f2; }
         .tab-bg { position: absolute; width: 50%; height: calc(100% - 10px); background: var(--bg-container); border-radius: 8px; transition: 0.3s; z-index: 1; }
         .slide-right { transform: translateX(100%); }
-
         .card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 15px; margin-top: 15px; border-radius: 10px; }
-        .card img { width: 100%; border-radius: 8px; margin-bottom: 10px; }
-        
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .modal-box { background: var(--bg-container); padding: 25px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; }
     </style>
@@ -77,7 +49,7 @@
             <h2 style="text-align: center; color: #1877f2;">🔍 Penemu</h2>
             <input type="text" id="login-id" placeholder="Nickname atau Gmail">
             <input type="password" id="login-pass" placeholder="Password">
-            <button id="btn-login-action" class="btn-main" style="margin-top: 15px;">Login</button>
+            <button id="btn-login-action" class="btn-main">Login</button>
             <p id="btn-forgot-password" class="link-forgot">Lupa Password?</p>
             <p class="link-style" onclick="document.getElementById('login-section').classList.add('hidden'); document.getElementById('register-section').classList.remove('hidden');">Daftar Akun Baru</p>
         </div>
@@ -94,12 +66,8 @@
                     <button id="btn-logout" style="width:auto; padding:5px 10px; margin:0; background:var(--tab-bg); font-size: 11px; color: var(--text-main);">Logout</button>
                 </div>
             </div>
-            
             <div id="view-list">
-                <div class="search-container">
-                    <span class="search-icon">🔍</span>
-                    <input type="text" id="search-input" placeholder="Cari nama barang...">
-                </div>
+                <div class="search-container"><span class="search-icon">🔍</span><input type="text" id="search-input" placeholder="Cari nama barang..."></div>
                 <div class="filter-tab">
                     <div id="tab-all" class="tab-item active">Semua Laporan</div>
                     <div id="tab-mine" class="tab-item">Laporan Saya</div>
@@ -108,22 +76,12 @@
                 <button id="btn-buka-form" class="btn-main">+ Lapor Barang</button>
                 <div id="item-list"></div>
             </div>
-
-            <div id="view-form" class="hidden">
-                <h3>Detail Laporan</h3>
-                <input type="text" id="nama-barang" placeholder="Nama Barang">
-                <input type="text" id="lokasi-barang" placeholder="Lokasi">
-                <textarea id="deskripsi-barang" rows="3" placeholder="Deskripsi"></textarea>
-                <input type="file" id="foto-barang" accept="image/*">
-                <button id="btn-posting" class="btn-save">Posting Sekarang</button>
-                <button id="btn-batal" class="btn-cancel">Batal</button>
-            </div>
         </div>
     </div>
 
     <div id="reset-modal" class="modal-overlay hidden">
         <div class="modal-box">
-            <h3 id="reset-title">Reset Password</h3>
+            <h3>Reset Password</h3>
             <div id="step-email">
                 <p style="font-size: 13px;">Masukkan Gmail anda untuk menerima kode OTP.</p>
                 <input type="email" id="reset-email-input" placeholder="alamat@gmail.com">
@@ -135,21 +93,12 @@
                 <input type="password" id="new-pass-input" placeholder="Password Baru">
                 <button id="btn-verify-reset" class="btn-save">Update Password</button>
             </div>
-            <button onclick="document.getElementById('reset-modal').classList.add('hidden')" class="link-style" style="border:none; background:none;">Batal</button>
+            <p onclick="document.getElementById('reset-modal').classList.add('hidden')" class="link-style" style="text-decoration:none;">Batal</p>
         </div>
     </div>
 
     <div id="custom-alert" class="modal-overlay hidden">
         <div class="modal-box"><p id="modal-msg"></p><button onclick="document.getElementById('custom-alert').classList.add('hidden')" class="btn-main">OK</button></div>
-    </div>
-    <div id="confirm-modal" class="modal-overlay hidden">
-        <div class="modal-box">
-            <p style="font-weight: bold;">Hapus laporan ini?</p>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button id="btn-confirm-yes" class="btn-cancel" style="margin:0;">Ya, Hapus</button>
-                <button id="btn-confirm-no" class="btn-main" style="margin:0; background: #888;">Batal</button>
-            </div>
-        </div>
     </div>
 
     <script type="module" src="script.js"></script>
