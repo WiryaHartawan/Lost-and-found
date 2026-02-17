@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getDatabase, ref, push, onValue, get, set, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-// --- KONFIGURASI ---
 const firebaseConfig = {
     apiKey: "AIzaSyBw9bZb08ux2Ft2ywM4Kygo3-FYEfWD-6I",
     authDomain: "lostfound-927df.firebaseapp.com",
@@ -25,70 +24,57 @@ let currentFilter = "all";
 let generatedOTP = "";
 let targetUserNick = "";
 
-// --- CUSTOM MODAL ---
-window.tampilPesan = (msg, isConfirm = false, onConfirm = null) => {
-    const modal = document.getElementById('custom-alert');
-    const actions = document.getElementById('modal-actions');
+// --- UTILS ---
+const tampilPesan = (msg) => {
     document.getElementById('modal-msg').innerText = msg;
-    modal.classList.remove('hidden');
-    actions.innerHTML = '';
-
-    if (isConfirm) {
-        const btnBatal = document.createElement('button');
-        btnBatal.className = "btn-cancel"; btnBatal.innerText = "Batal";
-        btnBatal.onclick = () => modal.classList.add('hidden');
-        const btnYa = document.createElement('button');
-        btnYa.className = "btn-main"; btnYa.innerText = "Ya, Hapus";
-        btnYa.style.background = "#ff4d4d";
-        btnYa.onclick = () => { onConfirm(); modal.classList.add('hidden'); };
-        actions.appendChild(btnBatal);
-        actions.appendChild(btnYa);
-    } else {
-        const btnOk = document.createElement('button');
-        btnOk.className = "btn-main"; btnOk.innerText = "OK";
-        btnOk.onclick = () => modal.classList.add('hidden');
-        actions.appendChild(btnOk);
-    }
+    document.getElementById('custom-alert').classList.remove('hidden');
 };
 
 // --- AUTH LOGIC ---
-async function loginLogic(nick, pass, isAuto = false) {
-    if (!nick || !pass) return;
-    const snap = await get(ref(db, 'users/' + nick.toLowerCase()));
-    if (snap.exists() && snap.val().password === pass) {
-        currentNick = nick.toLowerCase();
+document.getElementById('btn-login-action').onclick = async () => {
+    const inputID = document.getElementById('login-id').value.trim().toLowerCase();
+    const pass = document.getElementById('login-pass').value;
+    
+    const usersSnap = await get(ref(db, 'users'));
+    let loggedIn = false;
+
+    usersSnap.forEach((child) => {
+        const userData = child.val();
+        // Cek Nickname ATAU Gmail
+        if ((child.key === inputID || userData.email.toLowerCase() === inputID) && userData.password === pass) {
+            currentNick = child.key;
+            loggedIn = true;
+        }
+    });
+
+    if (loggedIn) {
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
-        document.getElementById('display-nick').innerText = nick;
-        localStorage.setItem('savedNick', nick);
+        document.getElementById('display-nick').innerText = currentNick;
+        localStorage.setItem('savedNick', currentNick);
         localStorage.setItem('savedPass', pass);
         loadData();
-    } else if (!isAuto) tampilPesan("Nickname atau Password salah!");
-}
+    } else tampilPesan("ID atau Password salah!");
+};
 
 document.getElementById('btn-register-action').onclick = async () => {
-    const nick = document.getElementById('reg-nick').value.trim();
+    const nick = document.getElementById('reg-nick').value.trim().toLowerCase();
     const email = document.getElementById('reg-email').value.trim();
     const wa = document.getElementById('reg-wa').value.trim();
     const pass = document.getElementById('reg-pass').value;
     const conf = document.getElementById('reg-confirm').value;
 
-    if (!nick || !email || !wa || !pass || pass !== conf) return tampilPesan("Data tidak valid!");
-    const userRef = ref(db, 'users/' + nick.toLowerCase());
-    const snap = await get(userRef);
-    if (snap.exists()) return tampilPesan("Nickname sudah ada!");
+    if (!nick || !email || !wa || !pass || pass !== conf) return tampilPesan("Data tidak lengkap!");
+    
+    const snap = await get(ref(db, 'users/' + nick));
+    if (snap.exists()) return tampilPesan("Nickname sudah digunakan!");
 
-    await set(userRef, { password: pass, email: email, whatsapp: wa });
+    await set(ref(db, 'users/' + nick), { password: pass, email: email, whatsapp: wa });
     tampilPesan("Berhasil Daftar! Silakan Login.");
     location.reload();
 };
 
-// --- LUPA PASSWORD & OTP ---
-document.getElementById('go-to-forgot').onclick = () => {
-    document.getElementById('login-section').classList.add('hidden');
-    document.getElementById('forgot-section').classList.remove('hidden');
-};
-
+// --- OTP LOGIC ---
 document.getElementById('btn-send-otp').onclick = async () => {
     const emailTarget = document.getElementById('forgot-email-input').value.trim();
     const btn = document.getElementById('btn-send-otp');
@@ -105,65 +91,70 @@ document.getElementById('btn-send-otp').onclick = async () => {
     if (found) {
         btn.disabled = true; btn.innerText = "Mengirim...";
         generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-
-        emailjs.send(SERVICE_ID, TEMPLATE_ID, {
-            email: emailTarget,
-            passcode: generatedOTP
-        }).then(() => {
+        emailjs.send(SERVICE_ID, TEMPLATE_ID, { email: emailTarget, passcode: generatedOTP })
+        .then(() => {
             tampilPesan("OTP terkirim!");
             document.getElementById('forgot-step-1').classList.add('hidden');
             document.getElementById('forgot-step-2').classList.remove('hidden');
-        }, (err) => {
+        }, () => {
             tampilPesan("Gagal kirim email.");
-            btn.disabled = false; btn.innerText = "Kirim Kode OTP";
+            btn.disabled = false;
         });
     } else tampilPesan("Email tidak terdaftar!");
 };
 
 document.getElementById('btn-reset-pass').onclick = async () => {
-    const userOTP = document.getElementById('input-otp').value;
-    const newPass = document.getElementById('new-pass').value;
-    if (userOTP === generatedOTP && newPass.length >= 6) {
-        await set(ref(db, `users/${targetUserNick}/password`), newPass);
-        tampilPesan("Password berhasil diubah!");
+    const otp = document.getElementById('input-otp').value;
+    const nPass = document.getElementById('new-pass').value;
+    if (otp === generatedOTP && nPass.length >= 6) {
+        await set(ref(db, `users/${targetUserNick}/password`), nPass);
+        tampilPesan("Password diubah!");
         location.reload();
-    } else tampilPesan("OTP salah atau password terlalu pendek!");
+    } else tampilPesan("OTP salah!");
 };
 
-// --- DATA & POSTING ---
+// --- DATA LIST ---
 function loadData() {
-    onValue(ref(db, 'laporan_v2'), (s) => {
+    onValue(ref(db, 'laporan_v2'), async (s) => {
         const container = document.getElementById('item-list');
         container.innerHTML = "";
         const data = s.val();
-        if (data) {
-            Object.keys(data).reverse().forEach(id => {
-                const v = data[id];
-                const isMine = currentNick === v.user.toLowerCase();
-                if (currentFilter === "mine" && !isMine) return;
-                container.innerHTML += `
-                    <div class="card">
-                        ${isMine ? `<button class="btn-delete" onclick="hapusPostingan('${id}')">Hapus</button>` : ""}
-                        ${v.img ? `<img src="${v.img}">` : ""}
-                        <strong>📦 ${v.item}</strong><br>
-                        <small>📍 ${v.loc}</small><br>
-                        <small style="color:#1877f2;">👤 Pelapor: ${v.user}</small>
-                    </div>`;
-            });
-        } else container.innerHTML = "<p style='text-align:center;color:gray;'>Belum ada laporan.</p>";
+        if (!data) return container.innerHTML = "<p style='text-align:center;color:gray;'>Kosong.</p>";
+
+        const usersSnap = await get(ref(db, 'users'));
+        const users = usersSnap.val();
+
+        Object.keys(data).reverse().forEach(id => {
+            const v = data[id];
+            const isMine = currentNick === v.user.toLowerCase();
+            if (currentFilter === "mine" && !isMine) return;
+
+            const userData = users[v.user.toLowerCase()] || {};
+            const wa = userData.whatsapp || "";
+
+            container.innerHTML += `
+                <div class="card">
+                    ${isMine ? `<button class="btn-delete" onclick="hapusPostingan('${id}')">Hapus</button>` : ""}
+                    ${v.img ? `<img src="${v.img}">` : ""}
+                    <div class="info-row">📦 <b>Nama Barang:</b> ${v.item}</div>
+                    <div class="info-row">📍 <b>Lokasi:</b> ${v.loc}</div>
+                    <div class="info-row">👤 <b>Pelapor:</b> ${v.user}</div>
+                    ${wa && !isMine ? `
+                        <a href="https://wa.me/${wa.replace(/^0/, '62')}" target="_blank" class="btn-wa">
+                            Hubungi WhatsApp (${wa})
+                        </a>
+                    ` : ""}
+                </div>`;
+        });
     });
 }
 
-window.hapusPostingan = (id) => {
-    tampilPesan("Hapus laporan ini?", true, async () => {
-        await remove(ref(db, 'laporan_v2/' + id));
-    });
-};
+window.hapusPostingan = (id) => { if(confirm("Hapus laporan?")) remove(ref(db, 'laporan_v2/' + id)); };
 
+// --- POSTING ---
 document.getElementById('btn-posting').onclick = async () => {
     const n = document.getElementById('nama-barang'), l = document.getElementById('lokasi-barang'), f = document.getElementById('foto-barang');
-    if (!n.value || !l.value) return tampilPesan("Isi Nama & Lokasi!");
-    
+    if (!n.value || !l.value) return tampilPesan("Isi data!");
     let b64 = "";
     if (f.files[0]) {
         const reader = new FileReader();
@@ -172,7 +163,6 @@ document.getElementById('btn-posting').onclick = async () => {
             reader.readAsDataURL(f.files[0]);
         });
     }
-
     await push(ref(db, 'laporan_v2'), { item: n.value, loc: l.value, img: b64, user: currentNick });
     tampilPesan("Terposting!");
     document.getElementById('view-form').classList.add('hidden');
@@ -180,12 +170,12 @@ document.getElementById('btn-posting').onclick = async () => {
 };
 
 // --- UI EVENTS ---
-document.getElementById('btn-login-action').onclick = () => loginLogic(document.getElementById('login-nick').value, document.getElementById('login-pass').value);
-document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
 document.getElementById('go-to-reg').onclick = () => { document.getElementById('login-section').classList.add('hidden'); document.getElementById('register-section').classList.remove('hidden'); };
 document.getElementById('go-to-login').onclick = () => { document.getElementById('register-section').classList.add('hidden'); document.getElementById('login-section').classList.remove('hidden'); };
+document.getElementById('go-to-forgot').onclick = () => { document.getElementById('login-section').classList.add('hidden'); document.getElementById('forgot-section').classList.remove('hidden'); };
 document.getElementById('btn-buka-form').onclick = () => { document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-form').classList.remove('hidden'); };
 document.getElementById('btn-batal').onclick = () => { document.getElementById('view-form').classList.add('hidden'); document.getElementById('view-list').classList.remove('hidden'); };
+document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
 
 document.getElementById('tab-all').onclick = () => {
     currentFilter = "all";
@@ -202,16 +192,19 @@ document.getElementById('tab-mine').onclick = () => {
     loadData();
 };
 
-const regToggles = ['toggle-l', 'toggle-r1', 'toggle-r2'];
-const regInputs = ['login-pass', 'reg-pass', 'reg-confirm'];
-regToggles.forEach((id, i) => {
+// Password Toggle
+['toggle-l', 'toggle-r1', 'toggle-r2'].forEach((id, i) => {
     document.getElementById(id).onclick = () => {
-        const p = document.getElementById(regInputs[i]);
-        p.type = p.type === "password" ? "text" : "password";
+        const inp = [document.getElementById('login-pass'), document.getElementById('reg-pass'), document.getElementById('reg-confirm')][i];
+        inp.type = inp.type === "password" ? "text" : "password";
     };
 });
 
-window.addEventListener('load', () => {
+window.onload = () => {
     const sn = localStorage.getItem('savedNick'), sp = localStorage.getItem('savedPass');
-    if (sn && sp) loginLogic(sn, sp, true);
-});
+    if (sn && sp) {
+        document.getElementById('login-id').value = sn;
+        document.getElementById('login-pass').value = sp;
+        document.getElementById('btn-login-action').click();
+    }
+};
