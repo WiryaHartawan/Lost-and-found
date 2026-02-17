@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, get, set, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+import { getDatabase, ref, push, onValue, get, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBw9bZb08ux2Ft2ywM4Kygo3-FYEfWD-6I",
@@ -18,67 +18,39 @@ let currentFilter = "all";
 let searchQuery = "";
 let idYangAkanDihapus = null;
 
-// Utilitas Kapital Huruf Depan
-const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+// Kapitalisasi
+const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
 
-const tampilPesan = (msg) => {
-    document.getElementById('modal-msg').innerText = msg;
-    document.getElementById('custom-alert').classList.remove('hidden');
-};
+// --- LOGIKA DARK MODE ---
+const themeToggle = document.getElementById('theme-toggle');
+const themeSlider = document.getElementById('theme-slider');
+const textLight = document.getElementById('text-light');
+const textDark = document.getElementById('text-dark');
 
-// --- LOGIKA LOGIN & AUTO-LOGIN ---
-async function prosesLogin(idInput, passInput, isAuto = false) {
-    const usersSnap = await get(ref(db, 'users'));
-    let found = false;
-    usersSnap.forEach((child) => {
-        const u = child.val();
-        if ((child.key === idInput || u.email.toLowerCase() === idInput) && u.password === passInput) {
-            currentNick = child.key;
-            found = true;
-        }
-    });
-    if (found) {
-        document.getElementById('login-section').classList.add('hidden');
-        document.getElementById('main-app').classList.remove('hidden');
-        document.getElementById('display-nick').innerText = capitalize(currentNick);
-        localStorage.setItem('userPenemu', idInput);
-        localStorage.setItem('passPenemu', passInput);
-        loadData();
-    } else if(!isAuto) tampilPesan("ID atau Password salah!");
+function toggleTheme() {
+    const isDark = document.body.getAttribute('data-theme') === 'dark';
+    const newTheme = isDark ? 'light' : 'dark';
+    setTheme(newTheme);
 }
 
-document.getElementById('btn-login-action').onclick = () => {
-    const id = document.getElementById('login-id').value.trim().toLowerCase();
-    const pass = document.getElementById('login-pass').value;
-    prosesLogin(id, pass);
-};
-
-// --- LOGIKA HAPUS (CUSTOM MODAL) ---
-window.hapusPost = (id) => {
-    idYangAkanDihapus = id;
-    document.getElementById('confirm-modal').classList.remove('hidden');
-};
-
-document.getElementById('btn-confirm-yes').onclick = async () => {
-    if (idYangAkanDihapus) {
-        await remove(ref(db, 'laporan_v2/' + idYangAkanDihapus));
-        idYangAkanDihapus = null;
-        document.getElementById('confirm-modal').classList.add('hidden');
-        tampilPesan("Laporan berhasil dihapus!");
+function setTheme(theme) {
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('themePenemu', theme);
+    
+    if (theme === 'dark') {
+        themeSlider.classList.add('slide-dark');
+        textLight.classList.remove('active');
+        textDark.classList.add('active');
+    } else {
+        themeSlider.classList.remove('slide-dark');
+        textLight.classList.add('active');
+        textDark.classList.remove('active');
     }
-};
+}
 
-document.getElementById('btn-confirm-no').onclick = () => {
-    idYangAkanDihapus = null;
-    document.getElementById('confirm-modal').classList.add('hidden');
-};
+themeToggle.onclick = toggleTheme;
 
-// --- SEARCH & DATA LOADING ---
-document.getElementById('search-input').oninput = (e) => {
-    searchQuery = e.target.value.toLowerCase();
-    loadData();
-};
-
+// --- DATA & SEARCH ---
 function loadData() {
     onValue(ref(db, 'laporan_v2'), async (s) => {
         const container = document.getElementById('item-list');
@@ -87,13 +59,11 @@ function loadData() {
         if (!data) return;
 
         const usersSnap = await get(ref(db, 'users'));
-        const users = usersSnap.val();
+        const users = usersSnap.val() || {};
 
         Object.keys(data).reverse().forEach(id => {
             const v = data[id];
             const isMine = currentNick === v.user.toLowerCase();
-            
-            // Filter Slider & Search
             if (currentFilter === "mine" && !isMine) return;
             if (searchQuery && !v.item.toLowerCase().includes(searchQuery)) return;
 
@@ -106,77 +76,47 @@ function loadData() {
                     ${v.img ? `<img src="${v.img}">` : ""}
                     <div class="info-row">📦 <b>Nama Barang:</b> <span>${v.item}</span></div>
                     <div class="info-row">📍 <b>Lokasi:</b> <span>${v.loc}</span></div>
-                    <div class="info-row">📝 <b>Deskripsi:</b> <span>${v.desc || '-'}</span></div>
                     <div class="info-row">👤 <b>Pelapor:</b> <span>${capitalize(v.user)}</span></div>
-                    ${waNum ? `
-                    <div class="info-row">📱 <b>Nomor:</b> 
-                        <a href="${waLink}" target="_blank" class="wa-link">${waNum}</a>
-                    </div>` : ""}
+                    ${waNum ? `<div class="info-row">📱 <b>Nomor:</b> <a href="${waLink}" target="_blank" class="wa-link">${waNum}</a></div>` : ""}
                     ${isMine ? `<button class="btn-delete" onclick="hapusPost('${id}')">Hapus Laporan</button>` : ""}
                 </div>`;
         });
     });
 }
 
-// --- TABS & NAVIGATION ---
-document.getElementById('tab-all').onclick = () => {
-    currentFilter = "all";
-    document.getElementById('tab-bg').classList.remove('slide-right');
-    document.getElementById('tab-mine').classList.remove('active');
-    document.getElementById('tab-all').classList.add('active');
-    loadData();
-};
-document.getElementById('tab-mine').onclick = () => {
-    currentFilter = "mine";
-    document.getElementById('tab-bg').classList.add('slide-right');
-    document.getElementById('tab-all').classList.remove('active');
-    document.getElementById('tab-mine').classList.add('active');
-    loadData();
-};
+// Event Listeners (Pencarian & Tab)
+document.getElementById('search-input').oninput = (e) => { searchQuery = e.target.value.toLowerCase(); loadData(); };
+document.getElementById('tab-all').onclick = () => { currentFilter = "all"; document.getElementById('tab-bg').classList.remove('slide-right'); document.getElementById('tab-mine').classList.remove('active'); document.getElementById('tab-all').classList.add('active'); loadData(); };
+document.getElementById('tab-mine').onclick = () => { currentFilter = "mine"; document.getElementById('tab-bg').classList.add('slide-right'); document.getElementById('tab-all').classList.remove('active'); document.getElementById('tab-mine').classList.add('active'); loadData(); };
 
-document.getElementById('btn-posting').onclick = async () => {
-    const n = document.getElementById('nama-barang'), l = document.getElementById('lokasi-barang'), 
-          d = document.getElementById('deskripsi-barang'), f = document.getElementById('foto-barang');
-    if (!n.value || !l.value) return tampilPesan("Isi data barang!");
-    let b64 = "";
-    if (f.files[0]) {
-        const reader = new FileReader();
-        b64 = await new Promise(r => {
-            reader.onload = (e) => r(e.target.result);
-            reader.readAsDataURL(f.files[0]);
-        });
+// Login & Modal
+async function prosesLogin(id, pass, auto = false) {
+    const s = await get(ref(db, 'users'));
+    let found = false;
+    s.forEach(c => { if((c.key === id || c.val().email.toLowerCase() === id) && c.val().password === pass) { currentNick = c.key; found = true; }});
+    if(found) {
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        document.getElementById('display-nick').innerText = capitalize(currentNick);
+        localStorage.setItem('userPenemu', id); localStorage.setItem('passPenemu', pass);
+        loadData();
     }
-    await push(ref(db, 'laporan_v2'), { item: n.value, loc: l.value, desc: d.value, img: b64, user: currentNick });
-    tampilPesan("Berhasil!");
-    document.getElementById('view-form').classList.add('hidden');
-    document.getElementById('view-list').classList.remove('hidden');
-};
+}
 
-document.getElementById('btn-buka-form').onclick = () => {
-    document.getElementById('nama-barang').value = "";
-    document.getElementById('lokasi-barang').value = "";
-    document.getElementById('deskripsi-barang').value = "";
-    document.getElementById('foto-barang').value = "";
-    document.getElementById('view-list').classList.add('hidden');
-    document.getElementById('view-form').classList.remove('hidden');
-};
-document.getElementById('btn-batal').onclick = () => {
-    document.getElementById('view-form').classList.add('hidden');
-    document.getElementById('view-list').classList.remove('hidden');
-};
-
-document.getElementById('btn-logout').onclick = () => {
-    localStorage.clear();
-    location.reload();
-};
+window.hapusPost = (id) => { idYangAkanDihapus = id; document.getElementById('confirm-modal').classList.remove('hidden'); };
+document.getElementById('btn-confirm-yes').onclick = async () => { if(idYangAkanDihapus) await remove(ref(db, 'laporan_v2/'+idYangAkanDihapus)); document.getElementById('confirm-modal').classList.add('hidden'); };
+document.getElementById('btn-confirm-no').onclick = () => document.getElementById('confirm-modal').classList.add('hidden');
 
 window.onload = () => {
-    const savedUser = localStorage.getItem('userPenemu');
-    const savedPass = localStorage.getItem('passPenemu');
-    if (savedUser && savedPass) prosesLogin(savedUser, savedPass, true);
+    // Muat Tema Terakhir
+    const savedTheme = localStorage.getItem('themePenemu') || 'light';
+    setTheme(savedTheme);
+
+    const u = localStorage.getItem('userPenemu'), p = localStorage.getItem('passPenemu');
+    if(u && p) prosesLogin(u, p, true);
 };
 
-document.getElementById('toggle-l').onclick = () => {
-    const p = document.getElementById('login-pass');
-    p.type = p.type === "password" ? "text" : "password";
-};
+document.getElementById('btn-login-action').onclick = () => prosesLogin(document.getElementById('login-id').value.toLowerCase(), document.getElementById('login-pass').value);
+document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
+document.getElementById('btn-buka-form').onclick = () => { document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-form').classList.remove('hidden'); };
+document.getElementById('btn-batal').onclick = () => { document.getElementById('view-form').classList.add('hidden'); document.getElementById('view-list').classList.remove('hidden'); };
