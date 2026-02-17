@@ -14,7 +14,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 let currentNick = "";
-let currentFilter = "all"; // Default filter
+let currentFilter = "all";
+let searchQuery = "";
 
 // Fungsi Kapital Huruf Depan
 const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -24,10 +25,10 @@ const tampilPesan = (msg) => {
     document.getElementById('custom-alert').classList.remove('hidden');
 };
 
+// --- LOGIN LOGIC ---
 async function prosesLogin(idInput, passInput, isAuto = false) {
     const usersSnap = await get(ref(db, 'users'));
     let found = false;
-
     usersSnap.forEach((child) => {
         const u = child.val();
         if ((child.key === idInput || u.email.toLowerCase() === idInput) && u.password === passInput) {
@@ -35,7 +36,6 @@ async function prosesLogin(idInput, passInput, isAuto = false) {
             found = true;
         }
     });
-
     if (found) {
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
@@ -52,7 +52,12 @@ document.getElementById('btn-login-action').onclick = () => {
     prosesLogin(id, pass);
 };
 
-// --- DATA & FILTER ---
+// --- SEARCH & DATA LOADING ---
+document.getElementById('search-input').oninput = (e) => {
+    searchQuery = e.target.value.toLowerCase();
+    loadData();
+};
+
 function loadData() {
     onValue(ref(db, 'laporan_v2'), async (s) => {
         const container = document.getElementById('item-list');
@@ -67,8 +72,11 @@ function loadData() {
             const v = data[id];
             const isMine = currentNick === v.user.toLowerCase();
             
-            // Logika Filter Slider
+            // Filter 1: Slider (Semua vs Milik Saya)
             if (currentFilter === "mine" && !isMine) return;
+
+            // Filter 2: Search Bar (Berdasarkan Nama Barang)
+            if (searchQuery && !v.item.toLowerCase().includes(searchQuery)) return;
 
             const userData = users[v.user.toLowerCase()] || {};
             const waNum = userData.whatsapp || "";
@@ -91,7 +99,7 @@ function loadData() {
     });
 }
 
-// Navigasi Filter Slider
+// --- NAVIGATION & TABS ---
 document.getElementById('tab-all').onclick = () => {
     currentFilter = "all";
     document.getElementById('tab-bg').classList.remove('slide-right');
@@ -107,13 +115,14 @@ document.getElementById('tab-mine').onclick = () => {
     loadData();
 };
 
+// Menghapus data
 window.hapusPost = (id) => { if(confirm("Hapus laporan?")) remove(ref(db, 'laporan_v2/' + id)); };
 
+// Tombol Posting
 document.getElementById('btn-posting').onclick = async () => {
     const n = document.getElementById('nama-barang'), l = document.getElementById('lokasi-barang'), 
           d = document.getElementById('deskripsi-barang'), f = document.getElementById('foto-barang');
     if (!n.value || !l.value) return tampilPesan("Isi data barang!");
-    
     let b64 = "";
     if (f.files[0]) {
         const reader = new FileReader();
@@ -122,13 +131,13 @@ document.getElementById('btn-posting').onclick = async () => {
             reader.readAsDataURL(f.files[0]);
         });
     }
-
     await push(ref(db, 'laporan_v2'), { item: n.value, loc: l.value, desc: d.value, img: b64, user: currentNick });
     tampilPesan("Berhasil!");
     document.getElementById('view-form').classList.add('hidden');
     document.getElementById('view-list').classList.remove('hidden');
 };
 
+// Navigasi Form
 document.getElementById('btn-buka-form').onclick = () => {
     document.getElementById('nama-barang').value = "";
     document.getElementById('lokasi-barang').value = "";
@@ -136,6 +145,10 @@ document.getElementById('btn-buka-form').onclick = () => {
     document.getElementById('foto-barang').value = "";
     document.getElementById('view-list').classList.add('hidden');
     document.getElementById('view-form').classList.remove('hidden');
+};
+document.getElementById('btn-batal').onclick = () => {
+    document.getElementById('view-form').classList.add('hidden');
+    document.getElementById('view-list').classList.remove('hidden');
 };
 
 document.getElementById('btn-logout').onclick = () => {
