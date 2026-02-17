@@ -6,46 +6,73 @@
     <title>Penemu - Temukan & Kembalikan</title>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 450px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        /* Variabel Warna untuk Light & Dark Mode */
+        :root {
+            --bg-body: #f0f2f5;
+            --bg-container: white;
+            --text-main: #333;
+            --text-sub: #555;
+            --border-color: #ddd;
+            --input-bg: white;
+            --card-bg: white;
+            --tab-bg: #eee;
+            --search-bg: #f0f2f5;
+        }
+
+        [data-theme="dark"] {
+            --bg-body: #18191a;
+            --bg-container: #242526;
+            --text-main: #e4e6eb;
+            --text-sub: #b0b3b8;
+            --border-color: #3e4042;
+            --input-bg: #3a3b3c;
+            --card-bg: #242526;
+            --tab-bg: #3a3b3c;
+            --search-bg: #3a3b3c;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-body); color: var(--text-main); margin: 0; padding: 20px; display: flex; justify-content: center; transition: 0.3s; }
+        .container { width: 100%; max-width: 450px; background: var(--bg-container); padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .hidden { display: none !important; }
-        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: inherit; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-family: inherit; background: var(--input-bg); color: var(--text-main); }
         
-        /* Tombol & Link */
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; transition: transform 0.1s, opacity 0.1s; }
-        button:active { transform: scale(0.96); opacity: 0.8; }
+        /* Navigasi & Tombol */
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; transition: transform 0.1s; }
+        button:active { transform: scale(0.96); }
         .btn-main { background: #1877f2; color: white; }
         .btn-save { background: #42b72a; color: white; }
         .btn-cancel { background: #f02849; color: white; }
         .btn-delete { background: #ff4d4d; color: white; padding: 10px; border-radius: 8px; font-size: 14px; margin-top: 10px; border: none; cursor: pointer; width: 100%; }
-        
-        /* Gaya Link Biru Bergaris Bawah */
         .link-style { color: #1877f2; text-decoration: underline; cursor: pointer; font-size: 14px; text-align: center; display: block; margin-top: 15px; }
-        .wa-link { color: #0000EE; text-decoration: underline; font-weight: bold; }
+        .wa-link { color: #0084ff; text-decoration: underline; font-weight: bold; }
+
+        /* Slider Mode (Terang/Gelap) */
+        .theme-switch-wrapper { display: flex; align-items: center; background: var(--tab-bg); padding: 3px; border-radius: 20px; width: 100px; position: relative; cursor: pointer; user-select: none; }
+        .theme-text { flex: 1; text-align: center; font-size: 10px; font-weight: bold; z-index: 2; transition: 0.3s; color: var(--text-sub); }
+        .theme-text.active { color: #1877f2; }
+        .theme-slider { position: absolute; width: 48px; height: 22px; background: var(--bg-container); border-radius: 18px; transition: 0.3s ease; z-index: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .slide-dark { transform: translateX(46px); }
 
         /* Search Bar */
         .search-container { position: relative; margin-bottom: 10px; }
-        #search-input { padding-left: 35px; border-radius: 20px; background: #f0f2f5; border: none; height: 45px; }
+        #search-input { padding-left: 35px; border-radius: 20px; background: var(--search-bg); border: none; height: 45px; }
         .search-icon { position: absolute; left: 12px; top: 13px; font-size: 14px; color: #888; }
 
         /* Slider Filter */
-        .filter-tab { display: flex; background: #eee; border-radius: 10px; margin-bottom: 15px; padding: 5px; position: relative; }
-        .tab-item { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; z-index: 2; color: #555; transition: 0.3s; }
+        .filter-tab { display: flex; background: var(--tab-bg); border-radius: 10px; margin-bottom: 15px; padding: 5px; position: relative; }
+        .tab-item { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; z-index: 2; color: var(--text-sub); transition: 0.3s; }
         .tab-item.active { color: #1877f2; }
-        .tab-bg { position: absolute; width: 50%; height: calc(100% - 10px); background: white; border-radius: 8px; transition: 0.3s ease; z-index: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .tab-bg { position: absolute; width: 50%; height: calc(100% - 10px); background: var(--bg-container); border-radius: 8px; transition: 0.3s ease; z-index: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .slide-right { transform: translateX(100%); }
         
-        .card { background: white; border: 1px solid #ddd; padding: 15px; margin-top: 15px; border-radius: 10px; }
+        /* Card & Modal */
+        .card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 15px; margin-top: 15px; border-radius: 10px; }
         .card img { width: 100%; border-radius: 8px; margin-bottom: 10px; }
         .info-row { display: flex; align-items: flex-start; margin: 8px 0; font-size: 14px; line-height: 1.4; }
-        .info-row b { color: #333; min-width: 110px; display: inline-block; }
+        .info-row b { color: var(--text-main); min-width: 110px; display: inline-block; }
         
-        .pass-container { position: relative; width: 100%; }
-        .toggle-pass { position: absolute; right: 10px; top: 18px; cursor: pointer; font-size: 11px; color: #1877f2; font-weight: bold; }
-
-        /* Modal Overlay */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 9999; }
-        .modal-box { background: white; padding: 25px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .modal-box { background: var(--bg-container); padding: 25px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; color: var(--text-main); }
     </style>
 </head>
 <body>
@@ -53,10 +80,7 @@
         <div id="login-section">
             <h2 style="text-align: center; color: #1877f2;">🔍 Penemu</h2>
             <input type="text" id="login-id" placeholder="Nickname atau Gmail">
-            <div class="pass-container">
-                <input type="password" id="login-pass" placeholder="Password">
-                <span class="toggle-pass" id="toggle-l">LIHAT</span>
-            </div>
+            <input type="password" id="login-pass" placeholder="Password">
             <button id="btn-login-action" class="btn-main" style="margin-top: 15px;">Login</button>
             <p class="link-style" onclick="document.getElementById('login-section').classList.add('hidden'); document.getElementById('register-section').classList.remove('hidden');">Daftar Akun Baru</p>
         </div>
@@ -72,9 +96,16 @@
         </div>
 
         <div id="main-app" class="hidden">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
                 <div>Halo, <b id="display-nick">...</b></div>
-                <button id="btn-logout" style="width:auto; padding:5px 12px; margin:0; background:#eee; font-size: 12px;">Logout</button>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="theme-switch-wrapper" id="theme-toggle">
+                        <div id="text-light" class="theme-text active">Terang</div>
+                        <div id="text-dark" class="theme-text">Gelap</div>
+                        <div id="theme-slider" class="theme-slider"></div>
+                    </div>
+                    <button id="btn-logout" style="width:auto; padding:5px 12px; margin:0; background:var(--tab-bg); font-size: 12px; color: var(--text-main);">Logout</button>
+                </div>
             </div>
             
             <div id="view-list">
@@ -97,7 +128,7 @@
                 <h3>Detail Laporan Baru</h3>
                 <input type="text" id="nama-barang" placeholder="Nama Barang">
                 <input type="text" id="lokasi-barang" placeholder="Lokasi Ketemu">
-                <textarea id="deskripsi-barang" rows="3" placeholder="Deskripsi (Ciri-ciri barang)"></textarea>
+                <textarea id="deskripsi-barang" rows="3" placeholder="Deskripsi"></textarea>
                 <input type="file" id="foto-barang" accept="image/*">
                 <button id="btn-posting" class="btn-save">Posting Sekarang</button>
                 <button id="btn-batal" class="btn-cancel">Batal</button>
