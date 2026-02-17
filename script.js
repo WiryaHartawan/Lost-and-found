@@ -47,11 +47,13 @@ window.handleRegister = async () => {
     const email = document.getElementById('reg-email').value.trim();
     const wa = document.getElementById('reg-wa').value.trim();
     const pass = document.getElementById('reg-pass').value;
+    const conf = document.getElementById('reg-confirm').value;
 
-    if (!nick || !email || !wa || !pass) return tampilPesan("Mohon lengkapi semua data!");
+    if (!nick || !email || !wa || !pass || !conf) return tampilPesan("Lengkapi semua data!");
+    if (pass !== conf) return tampilPesan("Password tidak cocok!");
     
     const snap = await get(ref(db, 'users/' + nick.toLowerCase()));
-    if (snap.exists()) return tampilPesan("Nickname sudah terpakai!");
+    if (snap.exists()) return tampilPesan("Nickname sudah ada!");
 
     await set(ref(db, 'users/' + nick.toLowerCase()), {
         password: pass,
@@ -111,7 +113,7 @@ window.verifyAndReset = async () => {
 
     if (userOTP === generatedOTP && newPass.length > 0) {
         await set(ref(db, `users/${targetUserNick}/password`), newPass);
-        tampilPesan("Password Diperbarui!");
+        tampilPesan("Password Berhasil Diganti!");
         showSection('login-section');
     } else {
         tampilPesan("Data Salah!");
@@ -157,7 +159,7 @@ function loadData() {
 }
 
 window.hapusPostingan = (id) => {
-    if(confirm("Hapus?")) remove(ref(db, 'laporan_v2/' + id));
+    if(confirm("Hapus laporan ini?")) remove(ref(db, 'laporan_v2/' + id));
 };
 
 window.setFilter = (f) => {
