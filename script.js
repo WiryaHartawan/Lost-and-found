@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getDatabase, ref, push, onValue, get, set, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-// Konfigurasi Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyBw9bZb08ux2Ft2ywM4Kygo3-FYEfWD-6I",
     authDomain: "lostfound-927df.firebaseapp.com",
@@ -15,28 +14,22 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 let currentNick = "";
+let currentFilter = "all"; // Default filter
 
-// --- UTILS ---
+// Fungsi Kapital Huruf Depan
+const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
 const tampilPesan = (msg) => {
     document.getElementById('modal-msg').innerText = msg;
     document.getElementById('custom-alert').classList.remove('hidden');
 };
 
-function resetForm() {
-    document.getElementById('nama-barang').value = "";
-    document.getElementById('lokasi-barang').value = "";
-    document.getElementById('deskripsi-barang').value = "";
-    document.getElementById('foto-barang').value = "";
-}
-
-// --- FUNGSI PROSES LOGIN (AUTO & MANUAL) ---
 async function prosesLogin(idInput, passInput, isAuto = false) {
     const usersSnap = await get(ref(db, 'users'));
     let found = false;
 
     usersSnap.forEach((child) => {
         const u = child.val();
-        // Cek Nickname ATAU Gmail
         if ((child.key === idInput || u.email.toLowerCase() === idInput) && u.password === passInput) {
             currentNick = child.key;
             found = true;
@@ -46,42 +39,20 @@ async function prosesLogin(idInput, passInput, isAuto = false) {
     if (found) {
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
-        document.getElementById('display-nick').innerText = currentNick;
-        
-        // Simpan sesi untuk Auto-Login
+        document.getElementById('display-nick').innerText = capitalize(currentNick);
         localStorage.setItem('userPenemu', idInput);
         localStorage.setItem('passPenemu', passInput);
-        
         loadData();
-    } else {
-        if(!isAuto) tampilPesan("ID atau Password salah!");
-    }
+    } else if(!isAuto) tampilPesan("ID atau Password salah!");
 }
 
-// --- LOGIN & REGISTER ---
 document.getElementById('btn-login-action').onclick = () => {
     const id = document.getElementById('login-id').value.trim().toLowerCase();
     const pass = document.getElementById('login-pass').value;
     prosesLogin(id, pass);
 };
 
-document.getElementById('btn-register-action').onclick = async () => {
-    const nick = document.getElementById('reg-nick').value.trim().toLowerCase();
-    const email = document.getElementById('reg-email').value.trim();
-    const wa = document.getElementById('reg-wa').value.trim();
-    const pass = document.getElementById('reg-pass').value;
-
-    if (!nick || !wa || !pass) return tampilPesan("Data tidak lengkap!");
-    
-    const checkUser = await get(ref(db, 'users/' + nick));
-    if (checkUser.exists()) return tampilPesan("Nickname sudah dipakai!");
-
-    await set(ref(db, 'users/' + nick), { password: pass, email: email, whatsapp: wa });
-    tampilPesan("Berhasil Daftar! Silakan Login.");
-    location.reload();
-};
-
-// --- TAMPILAN DATA ---
+// --- DATA & FILTER ---
 function loadData() {
     onValue(ref(db, 'laporan_v2'), async (s) => {
         const container = document.getElementById('item-list');
@@ -95,10 +66,12 @@ function loadData() {
         Object.keys(data).reverse().forEach(id => {
             const v = data[id];
             const isMine = currentNick === v.user.toLowerCase();
+            
+            // Logika Filter Slider
+            if (currentFilter === "mine" && !isMine) return;
+
             const userData = users[v.user.toLowerCase()] || {};
             const waNum = userData.whatsapp || "";
-            
-            // Format link WhatsApp
             const waLink = `https://wa.me/${waNum.replace(/^0/, '62')}`;
 
             container.innerHTML += `
@@ -107,7 +80,7 @@ function loadData() {
                     <div class="info-row">📦 <b>Nama Barang:</b> <span>${v.item}</span></div>
                     <div class="info-row">📍 <b>Lokasi:</b> <span>${v.loc}</span></div>
                     <div class="info-row">📝 <b>Deskripsi:</b> <span>${v.desc || '-'}</span></div>
-                    <div class="info-row">👤 <b>Pelapor:</b> <span>${v.user}</span></div>
+                    <div class="info-row">👤 <b>Pelapor:</b> <span>${capitalize(v.user)}</span></div>
                     ${waNum ? `
                     <div class="info-row">📱 <b>Nomor:</b> 
                         <a href="${waLink}" target="_blank" class="wa-link">${waNum}</a>
@@ -118,14 +91,28 @@ function loadData() {
     });
 }
 
-window.hapusPost = (id) => { if(confirm("Hapus laporan ini?")) remove(ref(db, 'laporan_v2/' + id)); };
+// Navigasi Filter Slider
+document.getElementById('tab-all').onclick = () => {
+    currentFilter = "all";
+    document.getElementById('tab-bg').classList.remove('slide-right');
+    document.getElementById('tab-mine').classList.remove('active');
+    document.getElementById('tab-all').classList.add('active');
+    loadData();
+};
+document.getElementById('tab-mine').onclick = () => {
+    currentFilter = "mine";
+    document.getElementById('tab-bg').classList.add('slide-right');
+    document.getElementById('tab-all').classList.remove('active');
+    document.getElementById('tab-mine').classList.add('active');
+    loadData();
+};
 
-// --- POSTING ---
+window.hapusPost = (id) => { if(confirm("Hapus laporan?")) remove(ref(db, 'laporan_v2/' + id)); };
+
 document.getElementById('btn-posting').onclick = async () => {
     const n = document.getElementById('nama-barang'), l = document.getElementById('lokasi-barang'), 
           d = document.getElementById('deskripsi-barang'), f = document.getElementById('foto-barang');
-
-    if (!n.value || !l.value) return tampilPesan("Nama Barang & Lokasi wajib diisi!");
+    if (!n.value || !l.value) return tampilPesan("Isi data barang!");
     
     let b64 = "";
     if (f.files[0]) {
@@ -137,41 +124,32 @@ document.getElementById('btn-posting').onclick = async () => {
     }
 
     await push(ref(db, 'laporan_v2'), { item: n.value, loc: l.value, desc: d.value, img: b64, user: currentNick });
-    tampilPesan("Berhasil Terposting!");
-    resetForm(); // Bersihkan form
+    tampilPesan("Berhasil!");
     document.getElementById('view-form').classList.add('hidden');
     document.getElementById('view-list').classList.remove('hidden');
 };
 
-// --- NAVIGASI ---
 document.getElementById('btn-buka-form').onclick = () => {
-    resetForm(); // Pastikan bersih saat dibuka
+    document.getElementById('nama-barang').value = "";
+    document.getElementById('lokasi-barang').value = "";
+    document.getElementById('deskripsi-barang').value = "";
+    document.getElementById('foto-barang').value = "";
     document.getElementById('view-list').classList.add('hidden');
     document.getElementById('view-form').classList.remove('hidden');
 };
 
-document.getElementById('btn-batal').onclick = () => {
-    document.getElementById('view-form').classList.add('hidden');
-    document.getElementById('view-list').classList.remove('hidden');
+document.getElementById('btn-logout').onclick = () => {
+    localStorage.clear();
+    location.reload();
 };
 
-document.getElementById('btn-logout').onclick = () => {
-    localStorage.removeItem('userPenemu');
-    localStorage.removeItem('passPenemu');
-    location.reload();
+window.onload = () => {
+    const savedUser = localStorage.getItem('userPenemu');
+    const savedPass = localStorage.getItem('passPenemu');
+    if (savedUser && savedPass) prosesLogin(savedUser, savedPass, true);
 };
 
 document.getElementById('toggle-l').onclick = () => {
     const p = document.getElementById('login-pass');
     p.type = p.type === "password" ? "text" : "password";
-};
-
-// --- LOGIKA AUTO-LOGIN SAAT BUKA LINK ---
-window.onload = () => {
-    const savedUser = localStorage.getItem('userPenemu');
-    const savedPass = localStorage.getItem('passPenemu');
-
-    if (savedUser && savedPass) {
-        prosesLogin(savedUser, savedPass, true);
-    }
 };
