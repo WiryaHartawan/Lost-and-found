@@ -119,12 +119,23 @@ function renderData(filter = "") {
             const isOwner = v.user === currentNick;
             const namaKapital = v.user.charAt(0).toUpperCase() + v.user.slice(1);
             const formatWA = v.phone.startsWith('0') ? '62' + v.phone.slice(1) : v.phone;
+            
+            // --- LOGIKA TANGGAL & WAKTU ---
+            const d = new Date(v.time);
+            const hari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][d.getDay()];
+            const tanggalStr = `(${hari}, ${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()})`;
+            const jamStr = `(${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')})`;
+
             container.innerHTML += `
                 <div class="card">
+                    <div style="position: absolute; top: 10px; right: 10px; text-align: right; color: #888; font-size: 10px;">
+                        <div>${tanggalStr}</div>
+                        <div>${jamStr}</div>
+                    </div>
                     ${v.img ? `<img src="${v.img}">` : ""}
                     <p><b>📦 Barang:</b> ${v.item}</p>
                     <p><b>📍 Lokasi:</b> ${v.loc}</p>
-                    <p><b>📃 Deskripsi:</b> ${v.desc}</p>
+                    <p><b>📝 Deskripsi:</b> ${v.desc}</p>
                     <p><b>👤 Pelapor:</b> ${namaKapital}</p>
                     <p><b>📱 Nomor:</b> <a class="wa-link" href="https://wa.me/${formatWA}" target="_blank">${v.phone}</a></p>
                     ${isOwner ? `<button class="btn-del" onclick="hapusLaporan('${id}')">Hapus Laporan</button>` : ""}
@@ -132,7 +143,6 @@ function renderData(filter = "") {
         }
     });
 }
-
 // --- POSTING (MENGAMBIL NOMOR DARI AKUN) ---
 document.getElementById('btn-posting').onclick = async () => {
     const item = document.getElementById('nama-barang').value;
@@ -209,4 +219,5 @@ window.onload = () => {
     const p = localStorage.getItem('passPenemu');
     if(u && p) prosesLogin(u, p, true);
 };
+
 
