@@ -128,16 +128,18 @@ function renderData(filter = "") {
 
             container.innerHTML += `
                 <div class="card">
-                    <div style="position: absolute; top: 10px; right: 10px; text-align: right; color: #888; font-size: 10px;">
-                        <div>${tanggalStr}</div>
-                        <div>${jamStr}</div>
-                    </div>
                     ${v.img ? `<img src="${v.img}">` : ""}
                     <p><b>📦 Barang:</b> ${v.item}</p>
                     <p><b>📍 Lokasi:</b> ${v.loc}</p>
                     <p><b>📝 Deskripsi:</b> ${v.desc}</p>
                     <p><b>👤 Pelapor:</b> ${namaKapital}</p>
                     <p><b>📱 Nomor:</b> <a class="wa-link" href="https://wa.me/${formatWA}" target="_blank">${v.phone}</a></p>
+                    
+                    <div style="margin-top: 10px; color: #888; font-size: 10px; display: flex; gap: 5px;">
+                        <span>${tanggalStr}</span>
+                        <span>${jamStr}</span>
+                    </div>
+
                     ${isOwner ? `<button class="btn-del" onclick="hapusLaporan('${id}')">Hapus Laporan</button>` : ""}
                 </div>`;
         }
@@ -219,5 +221,6 @@ window.onload = () => {
     const p = localStorage.getItem('passPenemu');
     if(u && p) prosesLogin(u, p, true);
 };
+
 
 
