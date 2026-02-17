@@ -16,7 +16,7 @@
         .btn-main { background: #1877f2; color: white; }
         .btn-save { background: #42b72a; color: white; }
         .btn-cancel { background: #f02849; color: white; }
-        .btn-wa { background: #25D366; color: white; padding: 8px; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 5px; margin-top: 10px; width: 100%; }
+        .btn-wa { background: #25D366; color: white; padding: 10px; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 8px; margin-top: 10px; }
         .btn-delete { background: #ff4d4d; color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; float: right; }
         
         .link-auth { color: #1877f2; cursor: pointer; text-decoration: underline; font-size: 14px; text-align: center; display: block; margin-top: 10px; }
@@ -54,8 +54,8 @@
         <div id="register-section" class="hidden">
             <h2 style="text-align: center;">Daftar Akun</h2>
             <input type="text" id="reg-nick" placeholder="Nickname Baru">
-            <input type="email" id="reg-email" placeholder="Alamat Gmail (untuk OTP)">
-            <input type="number" id="reg-wa" placeholder="Nomor WhatsApp (Aktif)">
+            <input type="email" id="reg-email" placeholder="Alamat Gmail">
+            <input type="number" id="reg-wa" placeholder="Nomor WhatsApp">
             <div class="pass-container">
                 <input type="password" id="reg-pass" placeholder="Password">
                 <span class="toggle-pass" onclick="togglePass('reg-pass')">LIHAT</span>
@@ -67,12 +67,10 @@
         <div id="forgot-section" class="hidden">
             <h2 style="text-align: center;">Lupa Password</h2>
             <div id="forgot-step-1">
-                <p style="font-size: 13px; color: #666;">Masukkan Gmail terdaftar untuk menerima kode OTP.</p>
-                <input type="email" id="forgot-email" placeholder="Masukkan Gmail">
+                <input type="email" id="forgot-email" placeholder="Masukkan Gmail Terdaftar">
                 <button onclick="sendOTP()" class="btn-main">Kirim OTP</button>
             </div>
             <div id="forgot-step-2" class="hidden">
-                <p style="font-size: 13px; color: #666;">Masukkan kode 6 digit yang dikirim ke email.</p>
                 <input type="number" id="input-otp" placeholder="Kode OTP">
                 <input type="password" id="new-pass" placeholder="Password Baru">
                 <button onclick="verifyAndReset()" class="btn-save">Reset Password</button>
@@ -100,7 +98,7 @@
                 <h3>Detail Laporan</h3>
                 <input type="text" id="nama-barang" placeholder="Nama Barang">
                 <input type="text" id="lokasi-barang" placeholder="Lokasi Ketemu">
-                <textarea id="deskripsi-barang" placeholder="Deskripsi tambahan..." rows="3"></textarea>
+                <textarea id="deskripsi-barang" placeholder="Deskripsi tambahan (warna, ciri khas, dll)" rows="3"></textarea>
                 <input type="file" id="foto-barang" accept="image/*">
                 <button id="btn-posting" onclick="handlePosting()" class="btn-save">Posting Sekarang</button>
                 <button onclick="showView('view-list')" class="btn-cancel">Batal</button>
